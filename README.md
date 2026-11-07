@@ -14,11 +14,15 @@ data/scraped_routes.csv      Raw route data
 db/schema.sql                Core route tables
 db/surge_system.sql          Weather, surge, accident, quote, and notification tables
 scripts/setup_routes_db.sh   Creates DB, applies schema, imports routes
+scripts/geocode_locations.py One-time OpenStreetMap geocoder for stage names
+scripts/fetch_route_geometry.py One-time OSRM road-path fetcher for route pairs
 backend/                     FastAPI application
   app/
     api/                     HTTP routers
+    data/                    Cached stage coordinates and road paths
     providers/               Mock + ThriveWave notification adapters
     services/                Weather, surge engine, notifications, automation
+    static/live-map.html     OpenStreetMap + Leaflet live map
     config.py                Environment settings
     models.py                SQLAlchemy models
     scheduler.py             APScheduler jobs
@@ -76,11 +80,49 @@ cd backend
 ../.venv/bin/pytest
 ```
 
+## Live map
+
+Start the API and open:
+
+```
+http://localhost:8000/map
+```
+
+The page uses Leaflet with OpenStreetMap raster tiles and shows:
+
+- All 97 routes, coloured by line, with search and line filters.
+- Incident markers coloured by severity and faded when resolved/rejected.
+- Click-through from either list to the map, with route and incident popups.
+- Live fare lookup when a route is selected.
+- Browser geolocation ("Near me"), fit-to-routes, manual refresh, and a
+  30-second auto-refresh.
+
+Routes are drawn along roads using cached OSRM driving paths between stage
+coordinates. The paths are **fastest driving routes**, so they may differ from
+the exact corridor a sacco uses, but they no longer cut across buildings and
+parks. Geometry is cached in `backend/app/data/route_geometry.json`, keyed by
+`"start|end"`, so the map does not call a routing service at runtime.
+
+Two one-time data scripts keep the map working offline:
+
+```bash
+.venv/bin/python scripts/geocode_locations.py      # stage coordinates
+.venv/bin/python scripts/fetch_route_geometry.py   # road paths (resumable)
+```
+
+The geocoder uses OpenStreetMap Nominatim and the paths use the public OSRM demo
+server. Both are suitable for development and one-off caching only. For
+production, use a commercial routing provider or self-host OSRM/Nominatim.
+
+OSM's public tile server is also suitable for development. Use a production tile
+provider or self-hosted tiles for app traffic, and keep the OSM attribution.
+
 ## API overview
 
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/health` | Service, DB, provider, and weather configuration status |
+| `GET` | `/map` | Live OpenStreetMap route and incident map |
 | `POST` | `/api/v1/users` | Create an app user |
 | `POST` | `/api/v1/users/{id}/devices` | Register a push device/subscriber token |
 | `GET` | `/api/v1/routes` | List/filter routes |
@@ -95,6 +137,11 @@ cd backend
 | `POST` | `/api/v1/surges/expire` | Expire stale surge events (admin) |
 | `GET` | `/api/v1/notifications?user_id=` | In-app notification history |
 | `POST` | `/api/v1/notifications/test` | Send a test notification (admin) |
+
+Route responses include `start_lat`/`start_lon`, `end_lat`/`end_lon`, and a
+`path` array of `[latitude, longitude]` points that follows roads. `path` is
+`null` when no cached geometry exists, in which case the map falls back to a
+straight line.
 
 Admin endpoints require the `X-Admin-Token` header matching `ADMIN_API_TOKEN`.
 

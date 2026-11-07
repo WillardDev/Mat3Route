@@ -1,0 +1,530 @@
+{
+  "Allsops": {
+    "lat": -1.247572,
+    "lon": 36.8698511,
+    "display_name": "Allsops, Utalii ward, Roysambu division, Kasarani, Nairobi, 57935, Kenya",
+    "source": "nominatim"
+  },
+  "Athi River": {
+    "lat": -1.4481149,
+    "lon": 36.971587,
+    "display_name": "Athi River, Mavoko, Machakos, Kenya",
+    "source": "nominatim"
+  },
+  "Ayani": {
+    "lat": -1.3054,
+    "lon": 36.7759,
+    "display_name": "Ayani, Kenya (manual)",
+    "source": "manual"
+  },
+  "Baba Ndogo": {
+    "lat": -1.2439,
+    "lon": 36.8813,
+    "display_name": "Baba Ndogo, Kenya (manual)",
+    "source": "manual"
+  },
+  "Banana": {
+    "lat": -1.1736827,
+    "lon": 36.7575458,
+    "display_name": "Banana, karuri, Karuri ward, Kiambaa, Kiambu, 43563, Kenya",
+    "source": "nominatim"
+  },
+  "Bomas": {
+    "lat": -1.3385795,
+    "lon": 36.7661816,
+    "display_name": "Bomas, Karen ward, Langata, Nairobi, 00509, Kenya",
+    "source": "nominatim"
+  },
+  "Buruburu": {
+    "lat": -1.2861866,
+    "lon": 36.8774336,
+    "display_name": "Buruburu, Harambee ward, Makadara subcounty, Nairobi, 00515, Kenya",
+    "source": "nominatim"
+  },
+  "Caltex": {
+    "lat": -1.2997,
+    "lon": 36.8873,
+    "display_name": "Caltex, Kenya (manual)",
+    "source": "manual"
+  },
+  "City Stadium": {
+    "lat": -1.2936738,
+    "lon": 36.8423319,
+    "display_name": "City Stadium, Jogoo Road, Kaloleni, Kaloleni sublocation, Makongeni ward, Makadara subcounty, Nairobi, 00300, Kenya",
+    "source": "nominatim"
+  },
+  "Dagoretti": {
+    "lat": -1.2835913,
+    "lon": 36.7246656,
+    "display_name": "Dagoretti, Nairobi, Kenya",
+    "source": "nominatim"
+  },
+  "Dandora": {
+    "lat": -1.2449083,
+    "lon": 36.9060802,
+    "display_name": "Dandora, Dandora Area III ward, Njiru, Nairobi, 00623, Kenya",
+    "source": "nominatim"
+  },
+  "Deep West": {
+    "lat": -1.3149503,
+    "lon": 36.816742,
+    "display_name": "Deep West Resort, Mai Mahiu Road, Nairobi West, Nairobi West ward, Langata, Nairobi, 30326, Kenya",
+    "source": "nominatim"
+  },
+  "Eastleigh": {
+    "lat": -1.2743401,
+    "lon": 36.8489576,
+    "display_name": "Eastleigh, Eastleigh North ward, Kamukunji, Nairobi, 00610, Kenya",
+    "source": "nominatim"
+  },
+  "Fedha Estate": {
+    "lat": -1.31544,
+    "lon": 36.8950289,
+    "display_name": "Spinners Gardens, Fedha Estate, Outer Ring Road, Pipeline, Pipeline ward, Embakasi, Nairobi, 00501, Kenya",
+    "source": "nominatim"
+  },
+  "GM": {
+    "lat": -1.2863,
+    "lon": 36.8415,
+    "display_name": "GM, Kenya (manual)",
+    "source": "manual"
+  },
+  "Gasolina": {
+    "lat": -1.16,
+    "lon": 36.7,
+    "display_name": "Gasolina, Kenya (manual)",
+    "source": "manual"
+  },
+  "Gikomba": {
+    "lat": -1.2867334,
+    "lon": 36.8415284,
+    "display_name": "Gikomba, Gorofani/Bondeni sublocation, Pumwani ward, Kamukunji, Nairobi, 00300, Kenya",
+    "source": "nominatim"
+  },
+  "Githunguri": {
+    "lat": -1.0521605,
+    "lon": 36.8083343,
+    "display_name": "Githunguri, Kiambu, Kenya",
+    "source": "nominatim"
+  },
+  "Githurai": {
+    "lat": -1.202837,
+    "lon": 36.9168588,
+    "display_name": "Githurai, Nairobi, Kenya",
+    "source": "nominatim"
+  },
+  "Hardy": {
+    "lat": -1.3231,
+    "lon": 36.708,
+    "display_name": "Hardy, Kenya (manual)",
+    "source": "manual"
+  },
+  "Hazina": {
+    "lat": -1.3145132,
+    "lon": 36.8490002,
+    "display_name": "Hazina Village, South B, Nairobi South ward, Starehe, Nairobi, Kenya",
+    "source": "nominatim"
+  },
+  "Highridge": {
+    "lat": -1.2556111,
+    "lon": 36.8065531,
+    "display_name": "Highridge, Highridge division, Westlands, Nairobi, 00606, Kenya",
+    "source": "nominatim"
+  },
+  "Highrise": {
+    "lat": -1.309,
+    "lon": 36.817,
+    "display_name": "Highrise, Kenya (manual)",
+    "source": "manual"
+  },
+  "Huruma": {
+    "lat": -1.2587253,
+    "lon": 36.8715039,
+    "display_name": "Huruma, Ngei ward, Mathare, Nairobi, 57935, Kenya",
+    "source": "nominatim"
+  },
+  "JKIA": {
+    "lat": -1.3169486,
+    "lon": 36.9288569,
+    "display_name": "Jomo Kenyatta International Airport, Airport South Road, Pipeline, Pipeline ward, Embakasi, Nairobi, 00501, Kenya",
+    "source": "nominatim"
+  },
+  "Jacaranda": {
+    "lat": -1.2866816,
+    "lon": 36.9064772,
+    "display_name": "Jacaranda, Lower Savannah ward, Embakasi, Nairobi, 56744, Kenya",
+    "source": "nominatim"
+  },
+  "Joster": {
+    "lat": -1.295,
+    "lon": 36.9,
+    "display_name": "Joster, Kenya (manual)",
+    "source": "manual"
+  },
+  "KNH": {
+    "lat": -1.299852,
+    "lon": 36.8052065,
+    "display_name": "KNH Parking, Mbagathi Road, Sunview Estate, Woodley/Kenyatta/Golf Course ward, Kibra, Nairobi, 00202, Kenya",
+    "source": "nominatim"
+  },
+  "KPA": {
+    "lat": -1.33,
+    "lon": 36.848,
+    "display_name": "KPA area, Mombasa Road, Nairobi, Kenya (manual)",
+    "source": "manual"
+  },
+  "Kaberia": {
+    "lat": -1.25,
+    "lon": 36.72,
+    "display_name": "Kaberia, Kenya (manual)",
+    "source": "manual"
+  },
+  "Kahawa West": {
+    "lat": -1.1863052,
+    "lon": 36.9068145,
+    "display_name": "Kahawa West, Githurai division, Kasarani, Nairobi, 00607, Kenya",
+    "source": "nominatim"
+  },
+  "Kangemi": {
+    "lat": -1.2680073,
+    "lon": 36.7522966,
+    "display_name": "Kangemi, Kangemi division, Westlands, Nairobi, 23318, Kenya",
+    "source": "nominatim"
+  },
+  "Karen": {
+    "lat": -1.3283746,
+    "lon": 36.7049676,
+    "display_name": "Karen, Karen ward, Langata, Nairobi, 00505, Kenya",
+    "source": "nominatim"
+  },
+  "Kariobangi North": {
+    "lat": -1.2531457,
+    "lon": 36.8815023,
+    "display_name": "Kariobangi North, Kariobangi, Kariobangi North ward, Kasarani, Nairobi, 00623, Kenya",
+    "source": "nominatim"
+  },
+  "Kariobangi South": {
+    "lat": -1.2663343,
+    "lon": 36.8820657,
+    "display_name": "Kariobangi South, Kariobangi South ward, Njiru, Nairobi, 40653, Kenya",
+    "source": "nominatim"
+  },
+  "Kawangware": {
+    "lat": -1.2784631,
+    "lon": 36.751643,
+    "display_name": "Kawangware, Kawangware division, Dagoretti, Nairobi, 23318, Kenya",
+    "source": "nominatim"
+  },
+  "Kayole": {
+    "lat": -1.2667475,
+    "lon": 36.9193623,
+    "display_name": "Kayole, Njiru, Nairobi, 55145, Kenya",
+    "source": "nominatim"
+  },
+  "Kenyatta": {
+    "lat": -1.3008,
+    "lon": 36.8072,
+    "display_name": "Kenyatta, Kenya (manual)",
+    "source": "manual"
+  },
+  "Kiambu": {
+    "lat": -1.1663925,
+    "lon": 36.8252791,
+    "display_name": "Kiambu, Riabai ward, Kiambu Town, Kiambu, 00900, Kenya",
+    "source": "manual"
+  },
+  "Kibera": {
+    "lat": -1.3113332,
+    "lon": 36.7890001,
+    "display_name": "Kibera, Lindi ward, Kibra, Nairobi, 21104, Kenya",
+    "source": "nominatim"
+  },
+  "Kikuyu": {
+    "lat": -1.2438129,
+    "lon": 36.6646904,
+    "display_name": "Kikuyu, Kikuyu Township ward, Kikuyu, Kiambu, 00109, Kenya",
+    "source": "manual"
+  },
+  "Kiserian": {
+    "lat": -1.4304885,
+    "lon": 36.6869192,
+    "display_name": "Kiserian, Kajiado West, Kajiado, Kenya",
+    "source": "nominatim"
+  },
+  "Kitengela": {
+    "lat": -1.4745409,
+    "lon": 36.9589935,
+    "display_name": "Kitengela, Oloosirkon/Sholinke ward, Kajiado East, Kajiado, Kenya",
+    "source": "nominatim"
+  },
+  "Komarock": {
+    "lat": -1.2726556,
+    "lon": 36.9077371,
+    "display_name": "Komarock, Komarock ward, Embakasi, Nairobi, 00518, Kenya",
+    "source": "nominatim"
+  },
+  "Komarock Roundabout": {
+    "lat": -1.272,
+    "lon": 36.905,
+    "display_name": "Komarock Roundabout, Kenya (manual)",
+    "source": "manual"
+  },
+  "Langata": {
+    "lat": -1.3328938,
+    "lon": 36.7816659,
+    "display_name": "Langata, Mugumo-ini ward, Langata, Nairobi, 00509, Kenya",
+    "source": "manual"
+  },
+  "Lavington": {
+    "lat": -1.2740678,
+    "lon": 36.7762269,
+    "display_name": "Lavington, Kilimani division, Westlands, Nairobi, 54102, Kenya",
+    "source": "nominatim"
+  },
+  "Limuru": {
+    "lat": -1.1458738,
+    "lon": 36.6375998,
+    "display_name": "Limuru, Kiambu, 00217, Kenya",
+    "source": "nominatim"
+  },
+  "Lucky Summer": {
+    "lat": -1.2395593,
+    "lon": 36.8979793,
+    "display_name": "Lucky Summer, Lucky Summer sublocation, Kasarani, Nairobi, 00623, Kenya",
+    "source": "nominatim"
+  },
+  "Lunga Lunga": {
+    "lat": -1.3095,
+    "lon": 36.857,
+    "display_name": "Lunga Lunga, Kenya (manual)",
+    "source": "manual"
+  },
+  "Mama Lucy": {
+    "lat": -1.2745532,
+    "lon": 36.8992464,
+    "display_name": "Mama Lucy Kibaki Memorial Hospital, Kayole Spine Road, Komarock, Komarock ward, Embakasi, Nairobi, 00518, Kenya",
+    "source": "nominatim"
+  },
+  "Maringo": {
+    "lat": -1.2949998,
+    "lon": 36.8660393,
+    "display_name": "Maringo, Ofafa sublocation, Maringo/Hamza ward, Makadara subcounty, Nairobi, 17048, Kenya",
+    "source": "nominatim"
+  },
+  "Marurui": {
+    "lat": -1.2062212,
+    "lon": 36.8708795,
+    "display_name": "Marurui, Roysambu division, Kasarani, Nairobi, 31224, Kenya",
+    "source": "nominatim"
+  },
+  "Mathare North": {
+    "lat": -1.2535108,
+    "lon": 36.8677944,
+    "display_name": "Mathare North, Mathare North sublocation, Roysambu division, Kasarani, Nairobi, 57935, Kenya",
+    "source": "nominatim"
+  },
+  "Muthurwa": {
+    "lat": -1.2889623,
+    "lon": 36.8312652,
+    "display_name": "Muthurwa sublocation, Kamukunji location, CBD division, Starehe, Nairobi, Kenya",
+    "source": "nominatim"
+  },
+  "Mwiki": {
+    "lat": -1.2327573,
+    "lon": 36.9332678,
+    "display_name": "Mwiki, Kasarani division, Kasarani, Nairobi, 00608, Kenya",
+    "source": "nominatim"
+  },
+  "Nairobi CBD": {
+    "lat": -1.2900328,
+    "lon": 36.8249721,
+    "display_name": "Central Bank of Kenya, 60000, Haile Selassie Avenue, Central Business District, Starehe location, CBD division, Starehe, Nairobi, 00200, Kenya",
+    "source": "nominatim"
+  },
+  "Nairobi Hospital": {
+    "lat": -1.2967124,
+    "lon": 36.8044146,
+    "display_name": "Nairobi Hospital, P.O. Box 15000, Argwings Kodhek Road, Kilimani location, Kilimani ward, Kilimani division, Westlands, Nairobi, 00202, Kenya",
+    "source": "nominatim"
+  },
+  "Nakumatt": {
+    "lat": -1.267,
+    "lon": 36.75,
+    "display_name": "Nakumatt, Kenya (manual)",
+    "source": "manual"
+  },
+  "Ndenderu": {
+    "lat": -1.1939265,
+    "lon": 36.7449575,
+    "display_name": "Ndenderu, Karura Kanyungu, Ndenderu ward, Kiambaa, Kiambu, 43563, Kenya",
+    "source": "nominatim"
+  },
+  "Ndumberi": {
+    "lat": -1.1510355,
+    "lon": 36.8049376,
+    "display_name": "Ndumberi, Kiambu, 00900, Kenya",
+    "source": "nominatim"
+  },
+  "Ngong": {
+    "lat": -1.3666,
+    "lon": 36.65,
+    "display_name": "Ngong, Ngong ward, Kajiado North, Kajiado, Kenya",
+    "source": "nominatim"
+  },
+  "Ngumba": {
+    "lat": -1.2323192,
+    "lon": 36.8842965,
+    "display_name": "Ngumba, Kasarani sublocation, Kasarani location, Kasarani, Nairobi, 00623, Kenya",
+    "source": "nominatim"
+  },
+  "Ngumo": {
+    "lat": -1.3081231,
+    "lon": 36.7981642,
+    "display_name": "Ngumo West Estate, Woodley/Kenyatta/Golf Course ward, Kibra, Nairobi, 30728, Kenya",
+    "source": "nominatim"
+  },
+  "Nyayo": {
+    "lat": -1.2586126,
+    "lon": 36.8852305,
+    "display_name": "Nyayo, Kariobangi North ward, Kasarani, Nairobi, Kenya",
+    "source": "nominatim"
+  },
+  "Othaya": {
+    "lat": -1.285344,
+    "lon": 36.7749715,
+    "display_name": "Othaya Road, Kileleshwa, Nairobi, Kenya",
+    "source": "manual"
+  },
+  "Pipeline Jogoo": {
+    "lat": -1.312,
+    "lon": 36.885,
+    "display_name": "Pipeline Jogoo, Kenya (manual)",
+    "source": "manual"
+  },
+  "Pipeline Mombasa": {
+    "lat": -1.3370458,
+    "lon": 36.8959243,
+    "display_name": "SINOTRUK Kenya, Mombasa Road, Pipeline, Pipeline ward, Embakasi, Nairobi, 00501, Kenya",
+    "source": "nominatim"
+  },
+  "Redhill": {
+    "lat": -1.1688245,
+    "lon": 36.7067441,
+    "display_name": "Redhill, Ngecha Tigoni ward, Limuru, Kiambu, Kenya",
+    "source": "nominatim"
+  },
+  "Rikana": {
+    "lat": -1.2971,
+    "lon": 36.8942,
+    "display_name": "Rikana, Kenya (manual)",
+    "source": "manual"
+  },
+  "Rongai": {
+    "lat": -1.395968,
+    "lon": 36.7520106,
+    "display_name": "Ongata Rongai, Kajiado North, Kajiado, 00511, Kenya",
+    "source": "nominatim"
+  },
+  "Roundabout": {
+    "lat": -1.2923,
+    "lon": 36.841,
+    "display_name": "Roundabout, Kenya (manual)",
+    "source": "manual"
+  },
+  "Ruai": {
+    "lat": -1.2689967,
+    "lon": 36.9915483,
+    "display_name": "Ruai, Ruai ward, Njiru, Nairobi, 00520, Kenya",
+    "source": "nominatim"
+  },
+  "Ruaka": {
+    "lat": -1.205646,
+    "lon": 36.7844571,
+    "display_name": "Ruaka, Kiambaa, Kiambu, Kenya",
+    "source": "nominatim"
+  },
+  "Ruiru": {
+    "lat": -1.1774574,
+    "lon": 36.9824291,
+    "display_name": "Ruiru, Kiambu, Kenya",
+    "source": "nominatim"
+  },
+  "Ruiru Town": {
+    "lat": -1.1472712,
+    "lon": 36.9604486,
+    "display_name": "Ruiru, Biashara ward, Ruiru, Kiambu, 01001, Kenya",
+    "source": "nominatim"
+  },
+  "South B": {
+    "lat": -1.3141724,
+    "lon": 36.8376708,
+    "display_name": "South B, Nairobi South ward, Starehe, Nairobi, 00603, Kenya",
+    "source": "nominatim"
+  },
+  "South C": {
+    "lat": -1.3188367,
+    "lon": 36.8278221,
+    "display_name": "South C, South C ward, Langata, Nairobi, 30326, Kenya",
+    "source": "nominatim"
+  },
+  "Strathmore": {
+    "lat": -1.3103457,
+    "lon": 36.8126428,
+    "display_name": "Strathmore Business School, Keri Road, Madaraka Estate, Nairobi West, Nairobi West ward, Langata, Nairobi, 00202, Kenya",
+    "source": "nominatim"
+  },
+  "Sunton": {
+    "lat": -1.234369,
+    "lon": 36.9199887,
+    "display_name": "Sunton, Kasarani sublocation, Kasarani division, Kasarani, Nairobi, 00608, Kenya",
+    "source": "nominatim"
+  },
+  "Thika": {
+    "lat": -1.036648,
+    "lon": 37.077523,
+    "display_name": "Thika, Thika Township ward, Thika Town, Kiambu, Kenya",
+    "source": "nominatim"
+  },
+  "Umoja": {
+    "lat": -1.2834,
+    "lon": 36.8928,
+    "display_name": "Umoja, Kenya (manual)",
+    "source": "manual"
+  },
+  "Umoja/Donholm": {
+    "lat": -1.2992,
+    "lon": 36.8887,
+    "display_name": "Umoja/Donholm, Kenya (manual)",
+    "source": "manual"
+  },
+  "Utawala": {
+    "lat": -1.2843808,
+    "lon": 36.9680714,
+    "display_name": "Utawala, Embakasi, Nairobi, 00520, Kenya",
+    "source": "nominatim"
+  },
+  "Uthiru": {
+    "lat": -1.2606817,
+    "lon": 36.7112127,
+    "display_name": "Uthiru, Waithaka division, Dagoretti, Nairobi, 29039, Kenya",
+    "source": "nominatim"
+  },
+  "Wangige": {
+    "lat": -1.2199335,
+    "lon": 36.7130199,
+    "display_name": "Wangige, Kabete ward, Kabete, Kiambu, 23083, Kenya",
+    "source": "nominatim"
+  },
+  "Westlands": {
+    "lat": -1.2465281,
+    "lon": 36.7860759,
+    "display_name": "Westlands, Nairobi, Kenya",
+    "source": "nominatim"
+  },
+  "Yaya": {
+    "lat": -1.292713,
+    "lon": 36.787988,
+    "display_name": "DHL Express Yaya Center, Argwings Kodhek Road, Kilimani location, Kilimani ward, Kilimani division, Westlands, Nairobi, 29526, Kenya",
+    "source": "nominatim"
+  }
+}

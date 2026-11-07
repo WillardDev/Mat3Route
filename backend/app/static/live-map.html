@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mat3Route · Live map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111c33;
+      --panel-2: #17243d;
+      --line: #263553;
+      --text: #e6edf7;
+      --muted: #93a4bd;
+      --accent: #38bdf8;
+      --accent-2: #f97316;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --red: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    #app { display: flex; height: 100%; }
+
+    #sidebar {
+      width: 370px;
+      min-width: 370px;
+      height: 100%;
+      background: linear-gradient(180deg, var(--panel), #0c1527);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      z-index: 1200;
+    }
+
+    .sidebar-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+    }
+    .brand span {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-top: 2px;
+    }
+
+    #sidebar-close {
+      display: none;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      font-size: 12px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--line);
+      background: rgba(56, 189, 248, 0.04);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
+      flex: 0 0 auto;
+    }
+    .dot.error { background: var(--red); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15); }
+    .dot.loading { background: var(--amber); box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15); }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .toolbar button {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 9px;
+      padding: 9px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .toolbar button:hover { border-color: var(--accent); background: #1b2d4d; }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      padding: 12px 14px 0;
+    }
+    .tabs button {
+      flex: 1;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      padding: 9px 6px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .tabs button.active { color: var(--text); border-bottom-color: var(--accent); }
+    .tabs .count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 18px;
+      padding: 0 5px;
+      margin-left: 4px;
+      border-radius: 999px;
+      background: var(--panel-2);
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .panel { padding: 12px 14px; }
+    .panel[hidden] { display: none; }
+    #routes-panel[hidden], #incidents-panel[hidden] { display: none; }
+
+    .search, .select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #0b1425;
+      color: var(--text);
+      padding: 10px 11px;
+      font-size: 13px;
+      outline: none;
+      margin-bottom: 8px;
+    }
+    .search:focus, .select:focus { border-color: var(--accent); }
+    .select { appearance: none; cursor: pointer; }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      margin: 4px 0 10px;
+      cursor: pointer;
+    }
+    .toggle input { accent-color: var(--accent); }
+
+    .list {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding-right: 2px;
+      min-height: 80px;
+    }
+    #routes-panel, #incidents-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      flex: 1;
+    }
+    #routes-panel { padding-bottom: 0; }
+    #incidents-panel { padding-bottom: 0; }
+
+    .route-item, .incident-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      width: 100%;
+      text-align: left;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      color: inherit;
+      padding: 9px 8px;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .route-item:hover, .incident-item:hover { background: var(--panel-2); }
+    .route-item.selected { background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.45); }
+
+    .route-number {
+      flex: 0 0 auto;
+      min-width: 42px;
+      text-align: center;
+      border-radius: 7px;
+      padding: 4px 6px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #06121f;
+      background: var(--line-color, var(--accent));
+      margin-top: 1px;
+    }
+    .route-main, .incident-main { display: flex; flex-direction: column; min-width: 0; gap: 3px; }
+    .route-title, .incident-title {
+      font-size: 12.5px;
+      font-weight: 650;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .route-sub, .incident-sub {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.35;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      padding: 16px 8px;
+      text-align: center;
+    }
+
+    .severity-dot {
+      flex: 0 0 auto;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--dot, var(--amber));
+      margin-top: 5px;
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--dot, var(--amber)) 18%, transparent);
+    }
+
+    .sidebar-foot {
+      border-top: 1px solid var(--line);
+      padding: 10px 16px 12px;
+      font-size: 10.5px;
+      color: var(--muted);
+      line-height: 1.5;
+      background: #0a1221;
+    }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 6px; }
+    .legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .legend .line { width: 16px; height: 3px; border-radius: 2px; }
+    .sidebar-foot a { color: var(--accent); text-decoration: none; }
+
+    main { position: relative; flex: 1; min-width: 0; }
+    #map { position: absolute; inset: 0; background: #dce6f0; }
+
+    #sidebar-open {
+      display: none;
+      position: absolute;
+      z-index: 1100;
+      top: 14px;
+      left: 14px;
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
+      border: 1px solid rgba(15, 23, 42, 0.18);
+      background: #fff;
+      color: #0f172a;
+      font-size: 19px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(15, 23, 42, 0.18);
+    }
+
+    .detail-card {
+      position: absolute;
+      z-index: 1000;
+      left: 16px;
+      bottom: 16px;
+      width: min(360px, calc(100% - 76px));
+      background: rgba(15, 23, 42, 0.96);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 13px 14px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(6px);
+    }
+    .detail-card[hidden] { display: none; }
+    .detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .detail-head .badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #06121f;
+      border-radius: 6px;
+      padding: 2px 7px;
+      font-size: 11px;
+      font-weight: 800;
+      margin-right: 6px;
+    }
+    .detail-head strong { font-size: 13px; }
+    .detail-route { color: var(--muted); font-size: 12px; margin: 6px 0 10px; }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .detail-grid > div {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 7px 8px;
+    }
+    .detail-grid span { display: block; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); margin-bottom: 2px; }
+    .detail-grid strong { font-size: 12.5px; }
+    .detail-card.surge #detail-fare { color: var(--accent-2); }
+    .reasons { font-size: 11px; color: var(--muted); line-height: 1.45; }
+    #detail-close {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      flex: 0 0 auto;
+    }
+
+    .incident-icon-wrap { background: transparent; border: 0; }
+    .incident-pin {
+      display: block;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--pin, var(--amber));
+      border: 3px solid #fff;
+      box-shadow: 0 0 0 5px color-mix(in srgb, var(--pin, var(--amber)) 32%, transparent), 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .incident-pin.active { animation: pulse 1.8s infinite; }
+    .incident-pin.has-count {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-width: 2px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--pin, var(--amber)) 35%, transparent), 0 2px 8px rgba(0,0,0,0.4); }
+      50% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--pin, var(--amber)) 8%, transparent), 0 2px 8px rgba(0,0,0,0.4); }
+      100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--pin, var(--amber)) 35%, transparent), 0 2px 8px rgba(0,0,0,0.4); }
+    }
+
+    .leaflet-popup-content-wrapper {
+      border-radius: 11px;
+      box-shadow: 0 14px 38px rgba(15, 23, 42, 0.28);
+    }
+    .leaflet-popup-content { margin: 12px 14px; font-family: inherit; }
+    .popup-title { font-weight: 800; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 7px; }
+    .popup-title i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .popup-body { font-size: 12px; line-height: 1.45; color: #334155; margin: 0 0 8px; }
+    .popup-meta { font-size: 11px; color: #64748b; line-height: 1.55; }
+    .popup-route { font-weight: 700; color: #0f172a; }
+
+    @media (max-width: 820px) {
+      #sidebar {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: min(90vw, 370px);
+        min-width: 0;
+        transform: translateX(-105%);
+        transition: transform 0.22s ease;
+        box-shadow: 24px 0 60px rgba(0, 0, 0, 0.35);
+      }
+      #sidebar.open { transform: translateX(0); }
+      #sidebar-close, #sidebar-open { display: block; }
+      .detail-card { left: 14px; bottom: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div class="sidebar-head">
+        <div class="brand">Mat3Route <span>Live map</span></div>
+        <button id="sidebar-close" aria-label="Close panel">×</button>
+      </div>
+
+      <div class="status">
+        <span id="status-dot" class="dot loading"></span>
+        <span id="status-text">Loading map data…</span>
+      </div>
+
+      <div class="toolbar">
+        <button id="locate" type="button">Near me</button>
+        <button id="fit" type="button">Fit routes</button>
+        <button id="refresh" type="button">Refresh</button>
+      </div>
+
+      <div class="tabs">
+        <button type="button" class="active" data-tab="routes">Routes <span class="count" id="route-count">0</span></button>
+        <button type="button" data-tab="incidents">Incidents <span class="count" id="incident-count">0</span></button>
+      </div>
+
+      <section id="routes-panel" class="panel">
+        <input id="search" class="search" type="search" placeholder="Search route, stage, or sacco" autocomplete="off" />
+        <select id="line-filter" class="select"></select>
+        <label class="toggle"><input type="checkbox" id="show-routes" checked /> Show routes on map</label>
+        <div id="route-list" class="list"></div>
+      </section>
+
+      <section id="incidents-panel" class="panel" hidden>
+        <select id="incident-status" class="select">
+          <option value="active">Active incidents (reported + verified)</option>
+          <option value="all">All incidents</option>
+          <option value="resolved">Resolved + rejected</option>
+        </select>
+        <select id="incident-severity" class="select">
+          <option value="all">All severities</option>
+          <option value="high">High severity</option>
+          <option value="medium">Medium severity</option>
+          <option value="low">Low severity</option>
+        </select>
+        <label class="toggle"><input type="checkbox" id="show-incidents" checked /> Show incidents on map</label>
+        <div id="incident-list" class="list"></div>
+      </section>
+
+      <div class="sidebar-foot">
+        <div class="legend">
+          <span><i class="line" style="background:#38bdf8"></i> Route</span>
+          <span><i style="background:#ef4444"></i> High</span>
+          <span><i style="background:#f59e0b"></i> Medium</span>
+          <span><i style="background:#22c55e"></i> Low</span>
+          <span><i style="background:#94a3b8"></i> Resolved</span>
+        </div>
+        Route paths follow OSRM driving directions between stage coordinates and
+        may differ from the exact sacco corridor. Basemap and routing data by
+        <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>.
+      </div>
+    </aside>
+
+    <main>
+      <button id="sidebar-open" aria-label="Open panel">☰</button>
+      <div id="map"></div>
+
+      <div id="route-detail" class="detail-card" hidden>
+        <div class="detail-head">
+          <div><span class="badge" id="detail-badge">—</span><strong id="detail-line">—</strong></div>
+          <button id="detail-close" aria-label="Close route details">×</button>
+        </div>
+        <div class="detail-route" id="detail-route">—</div>
+        <div class="detail-grid">
+          <div><span>Base fare</span><strong id="detail-base">—</strong></div>
+          <div><span>Current fare</span><strong id="detail-fare">—</strong></div>
+          <div><span>Surge</span><strong id="detail-multiplier">—</strong></div>
+          <div><span>Sacco</span><strong id="detail-sacco">—</strong></div>
+        </div>
+        <div class="reasons" id="detail-reasons"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    "use strict";
+
+    const NAIROBI = [-1.2864, 36.8172];
+    const REFRESH_MS = 30000;
+    const PALETTE = [
+      "#38bdf8", "#f97316", "#a3e635", "#e879f9", "#facc15",
+      "#2dd4bf", "#fb7185", "#818cf8", "#4ade80", "#fbbf24",
+      "#c084fc", "#22d3ee", "#fca5a5", "#93c5fd", "#86efac",
+      "#f9a8d4", "#fde68a"
+    ];
+    const SEVERITY_COLORS = { high: "#ef4444", medium: "#f59e0b", low: "#22c55e" };
+    const SEVERITY_ORDER = { high: 3, medium: 2, low: 1 };
+    const ACTIVE_STATUSES = new Set(["reported", "verified"]);
+
+    const state = {
+      routes: [],
+      incidents: [],
+      routeById: new Map(),
+      lineColors: new Map(),
+      routeLayers: new Map(),
+      incidentMarkers: new Map(),
+      selectedRouteId: null,
+      activeTab: "routes",
+      lineFilter: "all",
+      search: "",
+      incidentStatus: "active",
+      incidentSeverity: "all",
+      showRoutes: true,
+      showIncidents: true,
+    };
+
+    const map = L.map("map", { zoomControl: false, preferCanvas: true })
+      .setView(NAIROBI, 11);
+    L.control.zoom({ position: "bottomright" }).addTo(map);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+
+    const routeLayer = L.layerGroup().addTo(map);
+    const incidentLayer = L.layerGroup().addTo(map);
+    const userLayer = L.layerGroup().addTo(map);
+
+    const el = {
+      sidebar: document.getElementById("sidebar"),
+      sidebarOpen: document.getElementById("sidebar-open"),
+      sidebarClose: document.getElementById("sidebar-close"),
+      statusDot: document.getElementById("status-dot"),
+      statusText: document.getElementById("status-text"),
+      routeCount: document.getElementById("route-count"),
+      incidentCount: document.getElementById("incident-count"),
+      search: document.getElementById("search"),
+      lineFilter: document.getElementById("line-filter"),
+      showRoutes: document.getElementById("show-routes"),
+      showIncidents: document.getElementById("show-incidents"),
+      incidentStatus: document.getElementById("incident-status"),
+      incidentSeverity: document.getElementById("incident-severity"),
+      routeList: document.getElementById("route-list"),
+      incidentList: document.getElementById("incident-list"),
+      routesPanel: document.getElementById("routes-panel"),
+      incidentsPanel: document.getElementById("incidents-panel"),
+      detail: document.getElementById("route-detail"),
+      detailBadge: document.getElementById("detail-badge"),
+      detailLine: document.getElementById("detail-line"),
+      detailRoute: document.getElementById("detail-route"),
+      detailBase: document.getElementById("detail-base"),
+      detailFare: document.getElementById("detail-fare"),
+      detailMultiplier: document.getElementById("detail-multiplier"),
+      detailSacco: document.getElementById("detail-sacco"),
+      detailReasons: document.getElementById("detail-reasons"),
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      }[char]));
+    }
+
+    function timeAgo(value) {
+      if (!value) return "";
+      const then = new Date(value).getTime();
+      if (Number.isNaN(then)) return "";
+      const minutes = Math.max(0, Math.round((Date.now() - then) / 60000));
+      if (minutes < 1) return "just now";
+      if (minutes < 60) return minutes + "m ago";
+      const hours = Math.round(minutes / 60);
+      if (hours < 24) return hours + "h ago";
+      return new Date(value).toLocaleString();
+    }
+
+    async function fetchJSON(url) {
+      const response = await fetch(url, { headers: { Accept: "application/json" } });
+      if (!response.ok) throw new Error(url + " returned HTTP " + response.status);
+      return response.json();
+    }
+
+    function setStatus(kind, text) {
+      el.statusDot.className = "dot " + (kind === "ok" ? "" : kind);
+      el.statusText.textContent = text;
+    }
+
+    function assignLineColors(routes) {
+      const lines = [...new Set(routes.map((route) => route.line))].sort();
+      state.lineColors.clear();
+      lines.forEach((line, index) => {
+        state.lineColors.set(line, PALETTE[index % PALETTE.length]);
+      });
+    }
+
+    function routeHasCoordinates(route) {
+      return [route.start_lat, route.start_lon, route.end_lat, route.end_lon]
+        .every((value) => typeof value === "number" && Number.isFinite(value));
+    }
+
+    function routeLatLngs(route) {
+      if (Array.isArray(route.path) && route.path.length > 1) {
+        return route.path;
+      }
+      if (routeHasCoordinates(route)) {
+        return [[route.start_lat, route.start_lon], [route.end_lat, route.end_lon]];
+      }
+      return null;
+    }
+
+    function incidentCoordinates(incident) {
+      if (
+        typeof incident.latitude === "number" &&
+        typeof incident.longitude === "number" &&
+        Number.isFinite(incident.latitude) &&
+        Number.isFinite(incident.longitude)
+      ) {
+        return { latlng: [incident.latitude, incident.longitude], approximate: false };
+      }
+      const route = state.routeById.get(incident.route_id);
+      if (route && routeHasCoordinates(route)) {
+        return { latlng: [route.start_lat, route.start_lon], approximate: true };
+      }
+      return null;
+    }
+
+    function popupForRoute(route) {
+      const fare = "KSh " + route.base_fare_min + "–" + route.base_fare_max;
+      return (
+        '<div class="popup-title">Route ' + escapeHtml(route.route_number) + "</div>" +
+        '<div class="popup-body"><span class="popup-route">' +
+        escapeHtml(route.start) + " → " + escapeHtml(route.end) + "</span><br>" +
+        escapeHtml(route.line) + " · " + escapeHtml(route.sacco) + "<br>Base fare " + fare +
+        "</div>" +
+        '<div class="popup-meta">Click the route to see the live fare.</div>'
+      );
+    }
+
+    function popupForIncident(incident, approximate) {
+      const color = SEVERITY_COLORS[incident.severity] || "#f59e0b";
+      const route = state.routeById.get(incident.route_id);
+      const routeText = route
+        ? "Route " + route.route_number + " · " + route.start + " → " + route.end
+        : "Route " + incident.route_id;
+      const statusLabel = String(incident.status || "").replace(/^\w/, (char) => char.toUpperCase());
+      const approximateText = approximate
+        ? '<div class="popup-meta" style="color:#b45309">Approximate location: route start stage (no GPS pin was supplied).</div>'
+        : "";
+      return (
+        '<div class="popup-title"><i style="background:' + color + '"></i>' +
+        escapeHtml(incident.severity) + " severity · " + escapeHtml(statusLabel) + "</div>" +
+        '<p class="popup-body">' + escapeHtml(incident.description) + "</p>" +
+        '<div class="popup-meta"><span class="popup-route">' + escapeHtml(routeText) + "</span><br>" +
+        "Reported " + escapeHtml(timeAgo(incident.reported_at)) + "</div>" +
+        approximateText
+      );
+    }
+
+    function popupForIncidentGroup(group) {
+      if (group.items.length === 1) {
+        return popupForIncident(group.items[0].incident, group.approximate);
+      }
+      const rows = group.items.map(({ incident }) => {
+        const color = SEVERITY_COLORS[incident.severity] || "#f59e0b";
+        const statusLabel = String(incident.status || "").replace(/^\w/, (char) => char.toUpperCase());
+        return (
+          '<p class="popup-body" style="margin:0">' +
+          '<span style="color:' + color + ';font-weight:800">' + escapeHtml(incident.severity) + "</span> · " +
+          escapeHtml(statusLabel) + " · " + escapeHtml(timeAgo(incident.reported_at)) + "<br>" +
+          escapeHtml(incident.description) + "</p>"
+        );
+      });
+      return (
+        '<div class="popup-title">' + group.items.length + " incidents here</div>" +
+        rows.join('<hr style="border:0;border-top:1px solid #e2e8f0;margin:8px 0">') +
+        (group.approximate
+          ? '<div class="popup-meta" style="color:#b45309">Approximate location: route start stage (no GPS pin supplied).</div>'
+          : "")
+      );
+    }
+
+    function filteredRoutes() {
+      const needle = state.search.trim().toLowerCase();
+      return state.routes.filter((route) => {
+        if (state.lineFilter !== "all" && route.line !== state.lineFilter) return false;
+        if (!needle) return true;
+        return [route.route_number, route.line, route.start, route.end, route.sacco]
+          .some((value) => String(value || "").toLowerCase().includes(needle));
+      });
+    }
+
+    function filteredIncidents() {
+      return state.incidents.filter((incident) => {
+        const status = String(incident.status || "");
+        if (state.incidentStatus === "active" && !ACTIVE_STATUSES.has(status)) return false;
+        if (state.incidentStatus === "resolved" && ACTIVE_STATUSES.has(status)) return false;
+        if (state.incidentSeverity !== "all" && incident.severity !== state.incidentSeverity) return false;
+        return incidentCoordinates(incident) !== null;
+      });
+    }
+
+    function renderRoutes() {
+      routeLayer.clearLayers();
+      state.routeLayers.clear();
+      const routes = filteredRoutes();
+      el.routeCount.textContent = String(routes.length);
+
+      if (!state.showRoutes) {
+        renderRouteList(routes);
+        return;
+      }
+
+      for (const route of routes) {
+        const latlngs = routeLatLngs(route);
+        if (!latlngs) continue;
+        const baseColor = state.lineColors.get(route.line) || "#38bdf8";
+        const selected = route.id === state.selectedRouteId;
+        const polyline = L.polyline(
+          latlngs,
+          {
+            color: selected ? "#f97316" : baseColor,
+            weight: selected ? 7 : 3,
+            opacity: selected ? 1 : 0.58,
+            lineCap: "round",
+          }
+        );
+        polyline.bindTooltip(
+          route.route_number + " · " + route.start + " → " + route.end,
+          { sticky: true, direction: "top", opacity: 0.95 }
+        );
+        polyline.bindPopup(popupForRoute(route), { closeButton: true });
+        polyline.on("click", () => selectRoute(route.id, { zoom: false }));
+        routeLayer.addLayer(polyline);
+        state.routeLayers.set(route.id, polyline);
+        if (selected) polyline.bringToFront();
+      }
+
+      renderRouteList(routes);
+    }
+
+    function renderRouteList(routes) {
+      if (!routes.length) {
+        el.routeList.innerHTML = '<div class="empty">No routes match those filters.</div>';
+        return;
+      }
+      const fragment = document.createDocumentFragment();
+      for (const route of routes) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "route-item" + (route.id === state.selectedRouteId ? " selected" : "");
+        button.dataset.routeId = String(route.id);
+        const color = state.lineColors.get(route.line) || "#38bdf8";
+        button.innerHTML =
+          '<span class="route-number" style="--line-color:' + color + '">' +
+          escapeHtml(route.route_number) + "</span>" +
+          '<span class="route-main">' +
+          '<span class="route-title">' + escapeHtml(route.start) + " → " + escapeHtml(route.end) + "</span>" +
+          '<span class="route-sub">' + escapeHtml(route.line) + " · " + escapeHtml(route.sacco) +
+          " · KSh " + route.base_fare_min + "–" + route.base_fare_max + "</span>" +
+          "</span>";
+        fragment.appendChild(button);
+      }
+      el.routeList.replaceChildren(fragment);
+    }
+
+    // Incidents that share a location (common for approximate fallbacks) are
+    // grouped into one marker with a count badge.
+    function groupIncidents(incidents) {
+      const groups = new Map();
+      for (const incident of incidents) {
+        const location = incidentCoordinates(incident);
+        if (!location) continue;
+        const key = location.latlng[0].toFixed(5) + "," + location.latlng[1].toFixed(5);
+        let group = groups.get(key);
+        if (!group) {
+          group = { latlng: location.latlng, approximate: location.approximate, items: [] };
+          groups.set(key, group);
+        }
+        group.items.push({ incident, location });
+      }
+      return [...groups.values()];
+    }
+
+    function renderIncidents() {
+      incidentLayer.clearLayers();
+      state.incidentMarkers.clear();
+      const incidents = filteredIncidents();
+      el.incidentCount.textContent = String(incidents.length);
+
+      if (state.showIncidents) {
+        for (const group of groupIncidents(incidents)) {
+          const count = group.items.length;
+          const active = group.items.some(({ incident }) => ACTIVE_STATUSES.has(String(incident.status)));
+          const severity = group.items.reduce(
+            (best, { incident }) =>
+              (SEVERITY_ORDER[incident.severity] || 0) > (SEVERITY_ORDER[best] || 0)
+                ? incident.severity
+                : best,
+            "low"
+          );
+          const color = active ? (SEVERITY_COLORS[severity] || "#f59e0b") : "#94a3b8";
+          const hasCount = count > 1;
+          const icon = L.divIcon({
+            className: "incident-icon-wrap",
+            html: '<span class="incident-pin ' + (active ? "active " : "") +
+              (hasCount ? "has-count" : "") + '" style="--pin:' + color + '">' +
+              (hasCount ? count : "") + "</span>",
+            iconSize: hasCount ? [30, 30] : [18, 18],
+            iconAnchor: hasCount ? [15, 15] : [9, 9],
+            popupAnchor: [0, hasCount ? -16 : -10],
+          });
+          const marker = L.marker(group.latlng, {
+            icon,
+            title: hasCount ? count + " incidents" : group.items[0].incident.description,
+          });
+          marker.bindPopup(popupForIncidentGroup(group));
+          marker.addTo(incidentLayer);
+          for (const { incident } of group.items) {
+            state.incidentMarkers.set(incident.id, { marker, incident });
+          }
+        }
+      }
+
+      renderIncidentList(incidents);
+    }
+
+    function renderIncidentList(incidents) {
+      if (!incidents.length) {
+        el.incidentList.innerHTML =
+          '<div class="empty">No incidents match these filters.<br>Report one with POST /api/v1/accidents and include latitude/longitude for an exact pin.</div>';
+        return;
+      }
+      const fragment = document.createDocumentFragment();
+      for (const incident of incidents) {
+        const location = incidentCoordinates(incident);
+        const route = state.routeById.get(incident.route_id);
+        const active = ACTIVE_STATUSES.has(String(incident.status));
+        const color = active ? (SEVERITY_COLORS[incident.severity] || "#f59e0b") : "#94a3b8";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "incident-item";
+        button.dataset.incidentId = String(incident.id);
+        button.innerHTML =
+          '<span class="severity-dot" style="--dot:' + color + '"></span>' +
+          '<span class="incident-main">' +
+          '<span class="incident-title">' + escapeHtml(incident.description) + "</span>" +
+          '<span class="incident-sub">' +
+          (route ? "Route " + escapeHtml(route.route_number) + " · " : "") +
+          escapeHtml(incident.severity) + " · " + escapeHtml(incident.status) +
+          " · " + escapeHtml(timeAgo(incident.reported_at)) +
+          (location && location.approximate ? " · approximate" : "") +
+          "</span></span>";
+        fragment.appendChild(button);
+      }
+      el.incidentList.replaceChildren(fragment);
+    }
+
+    function updateSelectionStyles() {
+      for (const [routeId, polyline] of state.routeLayers) {
+        const route = state.routeById.get(routeId);
+        if (!route) continue;
+        const selected = routeId === state.selectedRouteId;
+        polyline.setStyle({
+          color: selected ? "#f97316" : (state.lineColors.get(route.line) || "#38bdf8"),
+          weight: selected ? 7 : 3,
+          opacity: selected ? 1 : 0.58,
+        });
+        if (selected) polyline.bringToFront();
+      }
+      for (const button of el.routeList.querySelectorAll(".route-item")) {
+        button.classList.toggle("selected", Number(button.dataset.routeId) === state.selectedRouteId);
+      }
+    }
+
+    async function selectRoute(routeId, options = {}) {
+      const route = state.routeById.get(routeId);
+      if (!route) return;
+      state.selectedRouteId = routeId;
+      updateSelectionStyles();
+      showRouteDetail(route);
+
+      const latlngs = routeLatLngs(route);
+      if (latlngs) {
+        const bounds = L.latLngBounds(latlngs);
+        if (options.zoom) map.fitBounds(bounds.pad(0.2), { maxZoom: 14 });
+        const polyline = state.routeLayers.get(routeId);
+        if (polyline) polyline.openPopup(latlngs[Math.floor(latlngs.length / 2)]);
+      }
+      if (window.innerWidth <= 820) closeSidebar();
+    }
+
+    async function showRouteDetail(route) {
+      el.detail.hidden = false;
+      el.detail.classList.remove("surge");
+      el.detailBadge.textContent = route.route_number;
+      el.detailLine.textContent = route.line;
+      el.detailRoute.textContent = route.start + " → " + route.end;
+      el.detailBase.textContent = "KSh " + route.base_fare_min + "–" + route.base_fare_max;
+      el.detailSacco.textContent = route.sacco;
+      el.detailFare.textContent = "…";
+      el.detailMultiplier.textContent = "…";
+      el.detailReasons.textContent = "Fetching current fare…";
+
+      try {
+        const fare = await fetchJSON("/api/v1/routes/" + route.id + "/fare");
+        if (state.selectedRouteId !== route.id) return;
+        el.detailFare.textContent = "KSh " + fare.fare_min + "–" + fare.fare_max;
+        el.detailMultiplier.textContent = Number(fare.multiplier).toFixed(2) + "×";
+        el.detailReasons.textContent = (fare.reasons && fare.reasons.length)
+          ? fare.reasons.join(" · ")
+          : "Normal conditions";
+        if (fare.active) el.detail.classList.add("surge");
+      } catch (error) {
+        if (state.selectedRouteId !== route.id) return;
+        el.detailFare.textContent = "—";
+        el.detailMultiplier.textContent = "—";
+        el.detailReasons.textContent = "Could not load the live fare.";
+      }
+    }
+
+    function clearSelection() {
+      state.selectedRouteId = null;
+      el.detail.hidden = true;
+      updateSelectionStyles();
+    }
+
+    function renderLineFilter() {
+      const counts = new Map();
+      for (const route of state.routes) {
+        counts.set(route.line, (counts.get(route.line) || 0) + 1);
+      }
+      const lines = [...counts.keys()].sort();
+      const options = ['<option value="all">All lines (' + state.routes.length + ")</option>"];
+      for (const line of lines) {
+        options.push('<option value="' + escapeHtml(line) + '">' + escapeHtml(line) + " (" + counts.get(line) + ")</option>");
+      }
+      el.lineFilter.innerHTML = options.join("");
+      el.lineFilter.value = state.lineFilter;
+    }
+
+    function fitRoutes(routes = filteredRoutes()) {
+      const bounds = L.latLngBounds();
+      let hasPoints = false;
+      for (const route of routes) {
+        const latlngs = routeLatLngs(route);
+        if (!latlngs) continue;
+        bounds.extend(latlngs);
+        hasPoints = true;
+      }
+      if (!hasPoints) {
+        map.setView(NAIROBI, 11);
+        return;
+      }
+      map.fitBounds(bounds.pad(0.12), { maxZoom: 12 });
+    }
+
+    function focusIncident(incidentId) {
+      const entry = state.incidentMarkers.get(incidentId);
+      if (!entry) return;
+      const { marker } = entry;
+      map.setView(marker.getLatLng(), Math.max(map.getZoom(), 14), { animate: true });
+      marker.openPopup();
+      if (window.innerWidth <= 820) closeSidebar();
+    }
+
+    function openSidebar() {
+      el.sidebar.classList.add("open");
+      setTimeout(() => map.invalidateSize(), 250);
+    }
+    function closeSidebar() {
+      el.sidebar.classList.remove("open");
+      setTimeout(() => map.invalidateSize(), 250);
+    }
+
+    function switchTab(tab) {
+      state.activeTab = tab;
+      document.querySelectorAll(".tabs button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.tab === tab);
+      });
+      el.routesPanel.hidden = tab !== "routes";
+      el.incidentsPanel.hidden = tab !== "incidents";
+    }
+
+    function locateUser() {
+      if (!navigator.geolocation) {
+        setStatus("error", "Geolocation is not available in this browser.");
+        return;
+      }
+      setStatus("loading", "Getting your location…");
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const latlng = [position.coords.latitude, position.coords.longitude];
+          userLayer.clearLayers();
+          L.circle(latlng, {
+            radius: Math.max(position.coords.accuracy || 30, 20),
+            color: "#2563eb",
+            fillColor: "#3b82f6",
+            fillOpacity: 0.15,
+            weight: 1,
+          }).addTo(userLayer);
+          L.circleMarker(latlng, {
+            radius: 7,
+            color: "#fff",
+            weight: 3,
+            fillColor: "#2563eb",
+            fillOpacity: 1,
+          }).addTo(userLayer).bindPopup("You are here");
+          map.setView(latlng, 14);
+          setStatus("ok", "Centred on your location.");
+        },
+        (error) => {
+          setStatus("error", "Location unavailable: " + error.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    }
+
+    async function loadRoutes() {
+      const routes = await fetchJSON("/api/v1/routes?limit=200");
+      state.routes = routes;
+      state.routeById = new Map(routes.map((route) => [route.id, route]));
+      assignLineColors(routes);
+      renderLineFilter();
+      renderRoutes();
+      if (state.selectedRouteId && !state.routeById.has(state.selectedRouteId)) {
+        clearSelection();
+      }
+      return routes;
+    }
+
+    async function loadIncidents() {
+      const incidents = await fetchJSON("/api/v1/accidents?limit=200");
+      state.incidents = incidents;
+      renderIncidents();
+      return incidents;
+    }
+
+    async function loadData({ routes = true } = {}) {
+      setStatus("loading", routes ? "Refreshing map data…" : "Refreshing incidents…");
+      try {
+        if (routes) await loadRoutes();
+        const incidents = await loadIncidents();
+        const stamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+        setStatus(
+          "ok",
+          "Live · updated " + stamp + " · " + state.routes.length + " routes · " + incidents.length + " reports"
+        );
+      } catch (error) {
+        console.error(error);
+        setStatus("error", "Could not load data. Is the API running?");
+      }
+    }
+
+    // Filter and control wiring
+    el.search.addEventListener("input", (event) => {
+      state.search = event.target.value;
+      renderRoutes();
+    });
+
+    el.lineFilter.addEventListener("change", (event) => {
+      state.lineFilter = event.target.value;
+      renderRoutes();
+      fitRoutes();
+    });
+
+    el.showRoutes.addEventListener("change", (event) => {
+      state.showRoutes = event.target.checked;
+      renderRoutes();
+    });
+    el.showIncidents.addEventListener("change", (event) => {
+      state.showIncidents = event.target.checked;
+      renderIncidents();
+    });
+    el.incidentStatus.addEventListener("change", (event) => {
+      state.incidentStatus = event.target.value;
+      renderIncidents();
+    });
+    el.incidentSeverity.addEventListener("change", (event) => {
+      state.incidentSeverity = event.target.value;
+      renderIncidents();
+    });
+
+    el.routeList.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-route-id]");
+      if (button) selectRoute(Number(button.dataset.routeId), { zoom: true });
+    });
+    el.incidentList.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-incident-id]");
+      if (button) focusIncident(Number(button.dataset.incidentId));
+    });
+
+    document.querySelectorAll(".tabs button").forEach((button) => {
+      button.addEventListener("click", () => switchTab(button.dataset.tab));
+    });
+
+    el.sidebarOpen.addEventListener("click", openSidebar);
+    el.sidebarClose.addEventListener("click", closeSidebar);
+    document.getElementById("detail-close").addEventListener("click", clearSelection);
+    document.getElementById("locate").addEventListener("click", locateUser);
+    document.getElementById("fit").addEventListener("click", () => fitRoutes());
+    document.getElementById("refresh").addEventListener("click", loadData);
+
+    loadData();
+    setInterval(() => loadData({ routes: false }), REFRESH_MS);
+  </script>
+</body>
+</html>

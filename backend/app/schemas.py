@@ -79,6 +79,11 @@ class RouteOut(BaseModel):
     sacco_code: str
     base_fare_min: int
     base_fare_max: int
+    start_lat: float | None = None
+    start_lon: float | None = None
+    end_lat: float | None = None
+    end_lon: float | None = None
+    path: list[list[float]] | None = None
 
 
 class FarePreviewOut(BaseModel):

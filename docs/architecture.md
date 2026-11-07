@@ -221,7 +221,36 @@ so only one instance polls and sends.
 - Admin endpoints (`X-Admin-Token`): weather refresh, surge recalculation,
   surge expiry, accident status changes, test notifications.
 - `GET /health` reports DB status and whether weather/ThriveWave are configured.
+- `GET /map` serves the static Leaflet live map.
 - OpenAPI/Swagger is available at `/docs`.
+
+### Live map
+
+`backend/app/static/live-map.html` is a dependency-free Leaflet page served at
+`/map`. It reads the existing public API:
+
+- `GET /api/v1/routes?limit=200` for routes, stage coordinates, and road paths.
+- `GET /api/v1/accidents?limit=200` for incident markers.
+- `GET /api/v1/routes/{id}/fare` when a route is selected.
+
+Each route includes a `path` array of `[latitude, longitude]` points. Paths are
+cached OSRM driving directions between the geocoded start/end stages in
+`backend/app/data/route_geometry.json`, generated once by
+`scripts/fetch_route_geometry.py`. They follow roads but are fastest-driving
+routes rather than guaranteed sacco corridors. If a path is missing, the map
+falls back to a straight line between the two stages.
+
+Stage coordinates live in `backend/app/data/nairobi_locations.json`, generated
+by `scripts/geocode_locations.py` using OpenStreetMap Nominatim. Incidents
+without `latitude`/`longitude` fall back to the route start stage and are
+labelled "approximate" in the popup.
+
+The page refreshes incidents every 30 seconds and only reloads route geometry on
+load or manual refresh, so open route popups are not disturbed by the timer. OSM
+raster tiles require attribution; the public tile server is for development only
+and should be replaced by a production tile provider or self-hosted tiles. OSRM's
+demo server is likewise for development and one-off caching only; self-host OSRM
+or use a commercial routing provider in production.
 
 Before production:
 
