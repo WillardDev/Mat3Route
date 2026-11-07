@@ -11,8 +11,14 @@ logger = logging.getLogger(__name__)
 
 
 def build_provider(settings: Settings) -> NotificationProvider:
-    provider = settings.notification_provider.lower()
+    provider = getattr(settings, "notification_provider", "mock").lower()
+    channel = getattr(settings, "thrivewave_channel", "sms").lower()
     if provider == "thrivewave":
+        if channel == "sms" and not getattr(settings, "sms_enabled", False):
+            logger.warning(
+                "SMS sending is disabled (SMS_ENABLED=false); using the mock provider"
+            )
+            return MockNotificationProvider()
         if not settings.thrivewave_api_key:
             logger.warning(
                 "NOTIFICATION_PROVIDER=thrivewave but THRIVEWAVE_API_KEY is empty; "

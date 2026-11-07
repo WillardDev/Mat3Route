@@ -11,6 +11,7 @@ def thrivewave_settings(**overrides) -> Settings:
     values = {
         "database_url": "sqlite://",
         "notification_provider": "thrivewave",
+        "sms_enabled": True,
         "thrivewave_api_key": "test-key",
         "thrivewave_channel": "sms",
         "thrivewave_base_url": "https://sms.thrivevas.com",
@@ -122,3 +123,22 @@ def test_missing_api_key_returns_failure():
     )
     assert result.success is False
     assert "not configured" in (result.error or "")
+
+
+def test_sms_is_not_sent_when_disabled(monkeypatch):
+    calls: list[object] = []
+
+    def fake_post(*args, **kwargs):
+        calls.append((args, kwargs))
+        raise AssertionError("ThriveVas must not be contacted while SMS is disabled")
+
+    monkeypatch.setattr("app.providers.thrivewave.httpx.post", fake_post)
+    provider = ThriveWaveProvider(thrivewave_settings(sms_enabled=False))
+
+    result = provider.send(
+        NotificationMessage(recipient="+254700000001", title="Test", body="Test")
+    )
+
+    assert result.success is False
+    assert "disabled" in (result.error or "")
+    assert calls == []

@@ -81,6 +81,17 @@ async def _send_sms_thrivewave(phone: str, message: str, settings: Settings) -> 
     """Dispatch SMS via ThriveWave gateway."""
     normalized_phone = normalize_phone_number(phone)
 
+    # Master kill switch: never contact ThriveVas while SMS is disabled.
+    if not getattr(settings, "sms_enabled", False):
+        return {
+            "status": "disabled",
+            "recipient": normalized_phone,
+            "message": message,
+            "cost_credits": 0,
+            "simulated": True,
+            "note": "SMS sending is disabled (SMS_ENABLED=false).",
+        }
+
     # In demo mode if key not set
     if not settings.thrivewave_api_key:
         return {
@@ -164,10 +175,15 @@ async def send_sms(
     """Send arbitrary SMS text (e.g. notifications, alerts, directions) via ThriveWave."""
     phone = normalize_phone_number(body.phone)
     res = await _send_sms_thrivewave(phone, body.message, settings)
+    disabled = res.get("status") == "disabled"
     return SMSResponse(
-        success=True,
-        message="SMS dispatched successfully",
-        credits_used=1,
+        success=not disabled,
+        message=(
+            "SMS sending is disabled (SMS_ENABLED=false)"
+            if disabled
+            else "SMS dispatched successfully"
+        ),
+        credits_used=0 if disabled else 1,
         recipient=phone,
         details=res,
     )
@@ -213,10 +229,15 @@ async def send_route_sms(
     )
 
     result = await _send_sms_thrivewave(phone, sms_text, settings)
+    disabled = result.get("status") == "disabled"
     return SMSResponse(
-        success=True,
-        message=f"Route {row['route_number']} details sent to {phone}",
-        credits_used=1,
+        success=not disabled,
+        message=(
+            "SMS sending is disabled (SMS_ENABLED=false)"
+            if disabled
+            else f"Route {row['route_number']} details sent to {phone}"
+        ),
+        credits_used=0 if disabled else 1,
         recipient=phone,
         details=result,
     )

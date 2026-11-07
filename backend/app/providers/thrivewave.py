@@ -36,9 +36,19 @@ class ThriveWaveProvider:
 
     @property
     def channel(self) -> str:
-        return self.settings.thrivewave_channel.lower()
+        return getattr(self.settings, "thrivewave_channel", "sms").lower()
 
     def send(self, message: NotificationMessage) -> SendResult:
+        # Hard stop for SMS: no HTTP request is made while SMS_ENABLED=false.
+        if self.channel == "sms" and not getattr(self.settings, "sms_enabled", False):
+            logger.warning(
+                "SMS sending is disabled (SMS_ENABLED=false); suppressing SMS to %s",
+                message.recipient,
+            )
+            return SendResult(
+                success=False,
+                error="SMS sending is disabled (SMS_ENABLED=false)",
+            )
         try:
             if self.channel == "sms":
                 return self._send_sms(message)
@@ -88,6 +98,16 @@ class ThriveWaveProvider:
     # ThriveVas SMS
     # ------------------------------------------------------------------
     def _send_sms(self, message: NotificationMessage) -> SendResult:
+        # Defence in depth: never reach the network while SMS is disabled.
+        if not getattr(self.settings, "sms_enabled", False):
+            logger.warning(
+                "SMS sending is disabled (SMS_ENABLED=false); suppressing SMS to %s",
+                message.recipient,
+            )
+            return SendResult(
+                success=False,
+                error="SMS sending is disabled (SMS_ENABLED=false)",
+            )
         if not self.settings.thrivewave_api_key:
             return SendResult(success=False, error="THRIVEWAVE_API_KEY is not configured")
 

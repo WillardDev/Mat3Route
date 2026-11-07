@@ -33,6 +33,20 @@ class Settings(BaseSettings):
     thrivewave_api_key: str = ""
     thrivewave_api_url: str = "https://api.thrivevas.com/v1"
     thrivewave_sender_id: str = "Mat3Route"
+    thrivewave_channel: str = "sms"
+    thrivewave_base_url: str = "https://sms.thrivevas.com"
+    thrivewave_sms_path: str = "/v1/message/send"
+    thrivewave_notifications_path: str = "/api/personal-notifications"
+    thrivewave_website_id: str = ""
+    thrivewave_callback_url: str = ""
+    thrivewave_timeout_seconds: float = 15.0
+
+    # Notifications
+    notification_provider: str = "mock"
+
+    # Master SMS kill switch. Off by default so no code path can send a real
+    # SMS unless it is explicitly enabled. Push notifications are unaffected.
+    sms_enabled: bool = False
 
     # App
     app_name: str = "Mat3Route API"
