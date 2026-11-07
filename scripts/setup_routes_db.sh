@@ -34,7 +34,14 @@ echo "Applying schema..."
 psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/db/schema.sql"
 
 echo "Importing $CSV..."
-psql "$DB_URL" -v ON_ERROR_STOP=1 -v csv="$CSV" -f "$ROOT/db/import.sql"
+TMP_SQL="$(mktemp "${TMPDIR:-/tmp}/mat3route_import.XXXXXX.sql")"
+trap 'rm -f "$TMP_SQL"' EXIT
+
+# Escape the path for use inside SQL and sed's replacement.
+escaped_csv="$(printf '%s' "$CSV" | sed -e "s/'/''/g" -e 's/[&|]/\\&/g')"
+sed "s|__CSV_PATH__|$escaped_csv|g" "$ROOT/db/import.sql" > "$TMP_SQL"
+
+psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$TMP_SQL"
 
 psql "$DB_URL" -v ON_ERROR_STOP=1 -c "
   SELECT

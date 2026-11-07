@@ -1,6 +1,5 @@
 -- Import scraped routes from a CSV file.
--- Expects the psql variable `csv` to point to the CSV file, e.g.:
---   psql "$DATABASE_URL" -v csv=/path/to/scraped_routes.csv -f db/import.sql
+-- The setup script replaces __CSV_PATH__ with the CSV location before running this.
 -- The import is idempotent: existing routes have their fares updated.
 
 BEGIN;
@@ -16,7 +15,7 @@ CREATE TEMP TABLE route_import (
     fare_max      integer NOT NULL
 ) ON COMMIT DROP;
 
-\copy route_import (line, route_number, "start", "end", sacco, sacco_code, fare_min, fare_max) FROM :'csv' WITH (FORMAT csv, HEADER true)
+\copy route_import (line, route_number, "start", "end", sacco, sacco_code, fare_min, fare_max) FROM '__CSV_PATH__' WITH (FORMAT csv, HEADER true)
 
 INSERT INTO route_lines (name)
 SELECT DISTINCT line
