@@ -18,6 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from ..db import get_db
+from ..dependencies import get_automation_service
 from ..locations import load_locations
 from ..models import (
     AccidentReport,
@@ -34,6 +35,8 @@ from ..routers.auth import current_user_optional, mask_phone, require_user
 from ..utils import ensure_utc, utcnow
 
 logger = logging.getLogger(__name__)
+
+from ..services.automation import AutomationService
 
 router = APIRouter(tags=["MatatuPulse"])
 
@@ -450,6 +453,7 @@ def create_report(
     payload: ReportIn,
     db: Session = Depends(get_db),
     user: AppUser = Depends(require_user),
+    automation: AutomationService = Depends(get_automation_service),
 ) -> dict:
     if payload.type not in REPORT_TYPES:
         raise HTTPException(status_code=422, detail="Unknown report type.")
@@ -562,6 +566,17 @@ def create_report(
 
     db.commit()
     db.refresh(event)
+
+    if payload.type == "accident_police":
+        try:
+            automation.report_accident(
+                route_id=canonical.id,
+                description=title,
+                severity="medium",
+                reported_by_user_id=user.id,
+            )
+        except Exception:
+            pass
 
     others_count = max(0, event.confirmations - 1)
     return {
