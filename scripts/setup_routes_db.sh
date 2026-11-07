@@ -33,6 +33,9 @@ fi
 echo "Applying schema..."
 psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/db/schema.sql"
 
+echo "Applying surge, notification, and accident schema..."
+psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/db/surge_system.sql"
+
 echo "Importing $CSV..."
 TMP_SQL="$(mktemp "${TMPDIR:-/tmp}/mat3route_import.XXXXXX.sql")"
 trap 'rm -f "$TMP_SQL"' EXIT
