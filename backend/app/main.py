@@ -6,7 +6,17 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import accidents, health, notifications, quotes, routes, surges, users, weather
+from .api import (
+    accidents,
+    health,
+    live_map,
+    notifications,
+    quotes,
+    routes,
+    surges,
+    users,
+    weather,
+)
 from .config import Settings, get_settings
 from .db import Base, engine
 from .scheduler import build_scheduler
@@ -72,6 +82,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     api.include_router(notifications.router)
 
     app.include_router(health.router)
+    app.include_router(live_map.router)
     app.include_router(api)
     return app
 

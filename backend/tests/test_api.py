@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 ADMIN = {"X-Admin-Token": "test-admin"}
 
 
@@ -46,13 +48,34 @@ def test_user_and_device_registration(client, route):
 def test_route_list_and_fare_preview(client, route):
     listing = client.get("/api/v1/routes", params={"line": "A Line"})
     assert listing.status_code == 200
-    assert listing.json()[0]["route_number"] == "100"
+    first = listing.json()[0]
+    assert first["route_number"] == "100"
+    assert first["start_lat"] == pytest.approx(-1.29003, abs=1e-5)
+    assert first["start_lon"] == pytest.approx(36.82497, abs=1e-5)
+    assert first["end_lat"] is not None
+    assert first["end_lon"] is not None
+
+    path = first["path"]
+    assert isinstance(path, list)
+    assert len(path) > 2
+    assert path[0][0] == pytest.approx(first["start_lat"], abs=0.02)
+    assert path[0][1] == pytest.approx(first["start_lon"], abs=0.02)
+    assert path[-1][0] == pytest.approx(first["end_lat"], abs=0.02)
+    assert path[-1][1] == pytest.approx(first["end_lon"], abs=0.02)
 
     fare = client.get(f"/api/v1/routes/{route.id}/fare")
     assert fare.status_code == 200
     body = fare.json()
     assert body["base_fare_min"] == 80
     assert body["fare_min"] >= 80
+
+
+def test_live_map_page_is_served(client):
+    response = client.get("/map")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    assert "OpenStreetMap" in response.text
+    assert "leaflet" in response.text.lower()
 
 
 def test_accident_triggers_surge_quote_and_notification(client, route, provider):
