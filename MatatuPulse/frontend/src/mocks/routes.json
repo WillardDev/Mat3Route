@@ -1,0 +1,52 @@
+[
+  {
+    "id": 1,
+    "number": "23",
+    "name": "Kencom → Kangemi",
+    "via": "Waiyaki Way",
+    "destination": "Kangemi",
+    "pill": "moderate",
+    "alert_count": 0,
+    "subscribed": false
+  },
+  {
+    "id": 2,
+    "number": "46",
+    "name": "Kencom → Kawangware",
+    "via": "Ngong Road",
+    "destination": "Kawangware",
+    "pill": "maji_safi",
+    "alert_count": 0,
+    "subscribed": false
+  },
+  {
+    "id": 3,
+    "number": "58",
+    "name": "Ambassadeur → Buruburu",
+    "via": "Jogoo Road",
+    "destination": "Buruburu",
+    "pill": "maji_safi",
+    "alert_count": 0,
+    "subscribed": false
+  },
+  {
+    "id": 4,
+    "number": "111",
+    "name": "Ambassadeur → Ngong",
+    "via": "Ngong Road",
+    "destination": "Ngong",
+    "pill": "moderate",
+    "alert_count": 0,
+    "subscribed": false
+  },
+  {
+    "id": 5,
+    "number": "100",
+    "name": "Odeon → Githurai 45",
+    "via": "Thika Road",
+    "destination": "Githurai 45",
+    "pill": "kwama",
+    "alert_count": 1,
+    "subscribed": false
+  }
+]
