@@ -66,6 +66,7 @@ def settings() -> Settings:
         scheduler_enabled=False,
         admin_api_token="test-admin",
         notification_provider="mock",
+        sms_enabled=False,
         openweather_api_key="test-key",
         openweather_city="Nairobi",
         timezone="Africa/Nairobi",

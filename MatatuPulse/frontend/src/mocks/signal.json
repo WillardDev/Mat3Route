@@ -1,0 +1,399 @@
+{
+  "funnel": {
+    "raw": 200,
+    "spam": 61,
+    "events": 27,
+    "verified": 12
+  },
+  "pending_count": 15,
+  "reports": [
+    {
+      "id": 801,
+      "text": "win iphone 15, click hapa",
+      "source": "sms",
+      "phone": "07•• ••• 777",
+      "at": "2026-11-07T11:34:44.639205+00:00",
+      "is_spam": true,
+      "spam_reason": "blocklist",
+      "event_ref": null,
+      "event_label": null
+    },
+    {
+      "id": 800,
+      "text": "asante",
+      "source": "sms",
+      "phone": "07•• ••• 565",
+      "at": "2026-11-07T11:34:25.846141+00:00",
+      "is_spam": true,
+      "spam_reason": "unparseable",
+      "event_ref": null,
+      "event_label": null
+    },
+    {
+      "id": 799,
+      "text": "test",
+      "source": "sms",
+      "phone": "07•• ••• 186",
+      "at": "2026-11-07T11:34:15.012753+00:00",
+      "is_spam": true,
+      "spam_reason": "unparseable",
+      "event_ref": null,
+      "event_label": null
+    },
+    {
+      "id": 798,
+      "text": "flyers 100 bob odeon bado",
+      "source": "sms",
+      "phone": "07•• ••• 921",
+      "at": "2026-11-07T11:28:20.119167+00:00",
+      "is_spam": false,
+      "spam_reason": "",
+      "event_ref": "E-102",
+      "event_label": "Fare"
+    },
+    {
+      "id": 797,
+      "text": "ok",
+      "source": "sms",
+      "phone": "07•• ••• 074",
+      "at": "2026-11-07T11:28:13.106125+00:00",
+      "is_spam": true,
+      "spam_reason": "unparseable",
+      "event_ref": null,
+      "event_label": null
+    },
+    {
+      "id": 796,
+      "text": "?",
+      "source": "sms",
+      "phone": "07•• ••• 203",
+      "at": "2026-11-07T11:28:00.052117+00:00",
+      "is_spam": true,
+      "spam_reason": "unparseable",
+      "event_ref": null,
+      "event_label": null
+    },
+    {
+      "id": 795,
+      "text": "polisi g45 wanacheck leseni",
+      "source": "sms",
+      "phone": "07•• ••• 136",
+      "at": "2026-11-07T11:27:20.119167+00:00",
+      "is_spam": false,
+      "spam_reason": "",
+      "event_ref": "E-108",
+      "event_label": "Police"
+    },
+    {
+      "id": 794,
+      "text": "tumekwama kasarani",
+      "source": "sms",
+      "phone": "07•• ••• 897",
+      "at": "2026-11-07T11:27:08.119167+00:00",
+      "is_spam": false,
+      "spam_reason": "",
+      "event_ref": "E-107",
+      "event_label": "Jam"
+    },
+    {
+      "id": 793,
+      "text": "hi",
+      "source": "sms",
+      "phone": "07•• ••• 693",
+      "at": "2026-11-07T11:26:22.436411+00:00",
+      "is_spam": true,
+      "spam_reason": "unparseable",
+      "event_ref": null,
+      "event_label": null
+    },
+    {
+      "id": 792,
+      "text": "imejam kutoka roysambu mpaka kasarani, kama 40 min",
+      "source": "sms",
+      "phone": "07•• ••• 598",
+      "at": "2026-11-07T11:25:32.119167+00:00",
+      "is_spam": false,
+      "spam_reason": "",
+      "event_ref": "E-107",
+      "event_label": "Jam"
+    },
+    {
+      "id": 791,
+      "text": "karao wako stage githurai 45",
+      "source": "sms",
+      "phone": "07•• ••• 863",
+      "at": "2026-11-07T11:25:20.119167+00:00",
+      "is_spam": false,
+      "spam_reason": "",
+      "event_ref": "E-108",
+      "event_label": "Police"
+    },
+    {
+      "id": 790,
+      "text": "fare ni 100 sasa odeon, flyers wameongeza",
+      "source": "sms",
+      "phone": "07•• ••• 353",
+      "at": "2026-11-07T11:24:44.119167+00:00",
+      "is_spam": false,
+      "spam_reason": "",
+      "event_ref": "E-102",
+      "event_label": "Fare"
+    }
+  ],
+  "verified_events": [
+    {
+      "id": 107,
+      "ref": "E-107",
+      "title": "Jam at Kasarani",
+      "routes": "Route 100",
+      "stage": "Kasarani",
+      "type": "jam",
+      "status": "verified",
+      "reports": 4,
+      "first_seen": "2026-11-07T11:22:20.119167+00:00",
+      "verified_at": "2026-11-07T11:25:32.119167+00:00"
+    },
+    {
+      "id": 105,
+      "ref": "E-105",
+      "title": "Fare hike: Mwangaza Sacco KES 80 → 120",
+      "routes": "Route 100",
+      "stage": "Odeon",
+      "type": "fare_hike",
+      "status": "verified",
+      "reports": 3,
+      "first_seen": "2026-11-07T11:16:20.119167+00:00",
+      "verified_at": "2026-11-07T11:22:20.119167+00:00"
+    },
+    {
+      "id": 104,
+      "ref": "E-104",
+      "title": "Accident at Ngara",
+      "routes": "Route 100",
+      "stage": "Ngara",
+      "type": "accident_police",
+      "status": "verified",
+      "reports": 5,
+      "first_seen": "2026-11-07T11:14:20.119167+00:00",
+      "verified_at": "2026-11-07T11:18:20.119167+00:00"
+    },
+    {
+      "id": 102,
+      "ref": "E-102",
+      "title": "Fare hike: Thika Road Flyers KES 70 → 100",
+      "routes": "Route 100",
+      "stage": "Odeon",
+      "type": "fare_hike",
+      "status": "verified",
+      "reports": 6,
+      "first_seen": "2026-11-07T11:10:20.119167+00:00",
+      "verified_at": "2026-11-07T11:17:32.119167+00:00"
+    },
+    {
+      "id": 100,
+      "ref": "E-100",
+      "title": "Police check at Kasarani",
+      "routes": "Route 100",
+      "stage": "Kasarani",
+      "type": "accident_police",
+      "status": "cleared",
+      "reports": 3,
+      "first_seen": "2026-11-07T10:30:20.119167+00:00",
+      "verified_at": "2026-11-07T10:34:20.119167+00:00"
+    },
+    {
+      "id": 95,
+      "ref": "E-95",
+      "title": "Route closed at Moi Ave",
+      "routes": "Routes 23, 46",
+      "stage": "Moi Ave",
+      "type": "route_closed",
+      "status": "cleared",
+      "reports": 7,
+      "first_seen": "2026-11-07T10:04:20.119167+00:00",
+      "verified_at": "2026-11-07T10:06:44.119167+00:00"
+    },
+    {
+      "id": 92,
+      "ref": "E-92",
+      "title": "Police check at Makadara",
+      "routes": "Route 58",
+      "stage": "Makadara",
+      "type": "accident_police",
+      "status": "expired",
+      "reports": 13,
+      "first_seen": "2026-11-07T09:51:20.119167+00:00",
+      "verified_at": "2026-11-07T09:53:32.119167+00:00"
+    },
+    {
+      "id": 91,
+      "ref": "E-91",
+      "title": "Jam at Roysambu",
+      "routes": "Route 100",
+      "stage": "Roysambu",
+      "type": "jam",
+      "status": "expired",
+      "reports": 13,
+      "first_seen": "2026-11-07T09:48:20.119167+00:00",
+      "verified_at": "2026-11-07T09:50:44.119167+00:00"
+    },
+    {
+      "id": 90,
+      "ref": "E-90",
+      "title": "Jam at Karen",
+      "routes": "Route 111",
+      "stage": "Karen",
+      "type": "jam",
+      "status": "expired",
+      "reports": 13,
+      "first_seen": "2026-11-07T09:46:20.119167+00:00",
+      "verified_at": "2026-11-07T09:48:44.119167+00:00"
+    },
+    {
+      "id": 89,
+      "ref": "E-89",
+      "title": "Jam at Donholm",
+      "routes": "Route 58",
+      "stage": "Donholm",
+      "type": "jam",
+      "status": "expired",
+      "reports": 13,
+      "first_seen": "2026-11-07T09:44:20.119167+00:00",
+      "verified_at": "2026-11-07T09:46:44.119167+00:00"
+    },
+    {
+      "id": 86,
+      "ref": "E-86",
+      "title": "Jam at Junction",
+      "routes": "Route 46",
+      "stage": "Junction",
+      "type": "jam",
+      "status": "expired",
+      "reports": 14,
+      "first_seen": "2026-11-07T09:41:20.119167+00:00",
+      "verified_at": "2026-11-07T09:43:44.119167+00:00"
+    },
+    {
+      "id": 83,
+      "ref": "E-83",
+      "title": "Jam at Westlands",
+      "routes": "Route 23",
+      "stage": "Westlands",
+      "type": "jam",
+      "status": "expired",
+      "reports": 15,
+      "first_seen": "2026-11-07T09:38:20.119167+00:00",
+      "verified_at": "2026-11-07T09:40:44.119167+00:00"
+    }
+  ],
+  "alerts": [
+    {
+      "id": 49,
+      "sent_at": "2026-11-07T11:25:32.119167+00:00",
+      "text": "Jam at Kasarani",
+      "routes": "100",
+      "sent_to": "Route 100 subscribers · push",
+      "recipients": 0,
+      "status": "Active"
+    },
+    {
+      "id": 48,
+      "sent_at": "2026-11-07T11:22:20.119167+00:00",
+      "text": "Fare hike — Mwangaza Sacco now KES 120",
+      "routes": "100",
+      "sent_to": "Route 100 subscribers · SMS + push",
+      "recipients": 0,
+      "status": "Active"
+    },
+    {
+      "id": 47,
+      "sent_at": "2026-11-07T11:18:20.119167+00:00",
+      "text": "Accident at Ngara",
+      "routes": "100",
+      "sent_to": "Route 100 subscribers · SMS + push",
+      "recipients": 0,
+      "status": "Active"
+    },
+    {
+      "id": 46,
+      "sent_at": "2026-11-07T11:17:32.119167+00:00",
+      "text": "Fare hike — Thika Road Flyers now KES 100",
+      "routes": "100",
+      "sent_to": "Route 100 subscribers · SMS + push",
+      "recipients": 0,
+      "status": "Active"
+    },
+    {
+      "id": 45,
+      "sent_at": "2026-11-07T10:34:20.119167+00:00",
+      "text": "Police check at Kasarani",
+      "routes": "100",
+      "sent_to": "Route 100 subscribers · push",
+      "recipients": 0,
+      "status": "Cleared"
+    },
+    {
+      "id": 44,
+      "sent_at": "2026-11-07T10:06:44.119167+00:00",
+      "text": "Route closed — Moi Ave",
+      "routes": "23, 46",
+      "sent_to": "Route 23, 46 subscribers · SMS + push",
+      "recipients": 0,
+      "status": "Cleared"
+    },
+    {
+      "id": 43,
+      "sent_at": "2026-11-07T09:53:32.119167+00:00",
+      "text": "Police check at Makadara",
+      "routes": "58",
+      "sent_to": "Route 58 subscribers · push",
+      "recipients": 0,
+      "status": "Expired"
+    },
+    {
+      "id": 42,
+      "sent_at": "2026-11-07T09:50:44.119167+00:00",
+      "text": "Jam at Roysambu",
+      "routes": "100",
+      "sent_to": "Route 100 subscribers · push",
+      "recipients": 0,
+      "status": "Expired"
+    },
+    {
+      "id": 41,
+      "sent_at": "2026-11-07T09:48:44.119167+00:00",
+      "text": "Jam at Karen",
+      "routes": "111",
+      "sent_to": "Route 111 subscribers · push",
+      "recipients": 0,
+      "status": "Expired"
+    },
+    {
+      "id": 40,
+      "sent_at": "2026-11-07T09:46:44.119167+00:00",
+      "text": "Jam at Donholm",
+      "routes": "58",
+      "sent_to": "Route 58 subscribers · push",
+      "recipients": 0,
+      "status": "Expired"
+    },
+    {
+      "id": 39,
+      "sent_at": "2026-11-07T09:43:44.119167+00:00",
+      "text": "Jam at Junction",
+      "routes": "46",
+      "sent_to": "Route 46 subscribers · push",
+      "recipients": 0,
+      "status": "Expired"
+    },
+    {
+      "id": 38,
+      "sent_at": "2026-11-07T09:40:44.119167+00:00",
+      "text": "Jam at Westlands",
+      "routes": "23",
+      "sent_to": "Route 23 subscribers · push",
+      "recipients": 0,
+      "status": "Expired"
+    }
+  ]
+}
