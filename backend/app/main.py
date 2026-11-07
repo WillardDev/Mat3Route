@@ -1,90 +1,100 @@
-from __future__ import annotations
-
-import logging
+"""FastAPI application entry point for Mat3Route API."""
 from contextlib import asynccontextmanager
 
-from fastapi import APIRouter, FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
-from .api import (
-    accidents,
-    health,
-    live_map,
-    notifications,
-    quotes,
-    routes,
-    surges,
-    users,
-    weather,
+from .config import get_settings
+from .database import engine
+from .models.schemas import HealthOut
+from .routers import routes as routes_router
+from .routers import sms as sms_router
+
+settings = get_settings()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: test database connection
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+            print("[INFO] DB connection verified.")
+    except Exception as exc:
+        print(f"[WARN] DB ping on startup: {exc!r}")
+    yield
+    # Shutdown
+    await engine.dispose()
+
+
+app = FastAPI(
+    title=settings.app_name,
+    version=settings.app_version,
+    description=(
+        "Production REST API exposing Nairobi Matatu routes, stages, fares, and transport SACCOs "
+        "from PostgreSQL, integrated with ThriveWave SMS API for credits and SMS alerts. "
+        "Ready to be consumed by React and Angular frontends."
+    ),
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    lifespan=lifespan,
 )
-from .config import Settings, get_settings
-from .db import Base, engine
-from .scheduler import build_scheduler
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+# ── CORS ───────────────────────────────────────────────────────────────────────
+# Allow React (localhost:3000, localhost:5173), Angular (localhost:4200), and all origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-logger = logging.getLogger(__name__)
+
+# ── Routers ────────────────────────────────────────────────────────────────────
+app.include_router(routes_router.router, prefix="/api/v1")
+app.include_router(sms_router.router, prefix="/api/v1")
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
-    app_settings = settings or get_settings()
+# ── Health & Root ──────────────────────────────────────────────────────────────
+@app.get("/health", response_model=HealthOut, tags=["System"])
+async def health():
+    """Fly.io liveness probe and system health indicator."""
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        db_status = "connected"
+    except Exception as exc:
+        db_status = f"disconnected: {exc!r}"
 
-    @asynccontextmanager
-    async def lifespan(_: FastAPI):
-        if app_settings.auto_create_tables:
-            logger.info("creating any missing database tables")
-            Base.metadata.create_all(bind=engine)
-
-        scheduler = None
-        if app_settings.scheduler_enabled:
-            scheduler = build_scheduler(app_settings)
-            scheduler.start()
-            logger.info(
-                "scheduler started: weather every %s min, surges every %s min",
-                app_settings.weather_poll_minutes,
-                app_settings.surge_refresh_minutes,
-            )
-        try:
-            yield
-        finally:
-            if scheduler is not None:
-                scheduler.shutdown(wait=False)
-                logger.info("scheduler stopped")
-
-    app = FastAPI(
-        title=app_settings.app_name,
-        version="0.1.0",
-        description=(
-            "Weather alerts, dynamic fare surge calculation, accident reporting, "
-            "and push notification delivery for Mat3 routes."
-        ),
-        lifespan=lifespan,
+    sms_status = "configured" if settings.thrivewave_api_key else "demo_simulation"
+    return HealthOut(
+        status="ok",
+        version=settings.app_version,
+        db=db_status,
+        sms_service=sms_status,
     )
 
-    origins = app_settings.cors_origin_list
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=origins,
-        allow_credentials=origins != ["*"],
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
 
-    api = APIRouter(prefix="/api/v1")
-    api.include_router(users.router)
-    api.include_router(routes.router)
-    api.include_router(weather.router)
-    api.include_router(accidents.router)
-    api.include_router(surges.router)
-    api.include_router(quotes.router)
-    api.include_router(notifications.router)
-
-    app.include_router(health.router)
-    app.include_router(live_map.router)
-    app.include_router(api)
-    return app
-
-
-app = create_app()
+@app.get("/", tags=["System"])
+async def root():
+    return {
+        "service": settings.app_name,
+        "version": settings.app_version,
+        "docs_url": "/docs",
+        "redoc_url": "/redoc",
+        "openapi_url": "/openapi.json",
+        "health_check": "/health",
+        "endpoints": {
+            "routes": "/api/v1/routes",
+            "lines": "/api/v1/routes/lines",
+            "saccos": "/api/v1/routes/saccos",
+            "stats": "/api/v1/routes/stats/summary",
+            "search_locations": "/api/v1/routes/search/locations",
+            "sms_credits": "/api/v1/sms/credits",
+            "sms_send": "/api/v1/sms/send",
+            "sms_send_route": "/api/v1/sms/send-route",
+            "sms_pricing": "/api/v1/sms/pricing",
+        },
+    }
