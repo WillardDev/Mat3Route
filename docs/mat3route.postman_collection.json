@@ -1,0 +1,161 @@
+{
+  "info": {
+    "name": "Mat3Route API",
+    "description": "Weather alerts, dynamic fare surge, accident reporting, and notifications. Set baseUrl, adminToken, and smsTestUserId in collection variables.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:8000" },
+    { "key": "adminToken", "value": "dev-admin-token" },
+    { "key": "smsTestUserId", "value": "3" },
+    { "key": "routeId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+      }
+    },
+    {
+      "name": "Weather - current",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/weather/current",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "weather", "current"]
+        }
+      }
+    },
+    {
+      "name": "Weather - refresh (admin)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "X-Admin-Token", "value": "{{adminToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/weather/refresh",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "weather", "refresh"]
+        }
+      }
+    },
+    {
+      "name": "Routes - list",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/routes?limit=5",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "routes"],
+          "query": [{ "key": "limit", "value": "5" }]
+        }
+      }
+    },
+    {
+      "name": "Routes - fare preview",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/routes/{{routeId}}/fare",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "routes", "{{routeId}}", "fare"]
+        }
+      }
+    },
+    {
+      "name": "Surges - active for route",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/surges?route_id={{routeId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "surges"],
+          "query": [{ "key": "route_id", "value": "{{routeId}}" }]
+        }
+      }
+    },
+    {
+      "name": "Surges - recalculate (admin)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "X-Admin-Token", "value": "{{adminToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/surges/recalculate",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "surges", "recalculate"]
+        }
+      }
+    },
+    {
+      "name": "Quotes - create",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"route_id\": 1,\n  \"user_id\": 1\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/quotes",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "quotes"]
+        }
+      }
+    },
+    {
+      "name": "Accidents - report",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"route_id\": 1,\n  \"reported_by_user_id\": 1,\n  \"description\": \"Matatu collision blocking the road\",\n  \"severity\": \"high\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/accidents",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "accidents"]
+        }
+      }
+    },
+    {
+      "name": "Notifications - history",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/notifications?user_id=1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "notifications"],
+          "query": [{ "key": "user_id", "value": "1" }]
+        }
+      }
+    },
+    {
+      "name": "Notifications - send SMS test (admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "X-Admin-Token", "value": "{{adminToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": {{smsTestUserId}},\n  \"title\": \"Mat3Route test\",\n  \"body\": \"This is a test alert from Mat3Route.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/notifications/test",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "notifications", "test"]
+        }
+      }
+    }
+  ]
+}

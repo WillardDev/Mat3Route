@@ -1,0 +1,16 @@
+Metadata-Version: 2.4
+Name: mat3-surge-service
+Version: 0.1.0
+Summary: Weather alerts, dynamic fare surges, and push notifications for Mat3 routes.
+Requires-Python: >=3.11
+Requires-Dist: fastapi<1.0,>=0.115
+Requires-Dist: uvicorn[standard]>=0.30
+Requires-Dist: sqlalchemy>=2.0.36
+Requires-Dist: psycopg[binary]>=3.2
+Requires-Dist: pydantic-settings>=2.6
+Requires-Dist: httpx>=0.27
+Requires-Dist: APScheduler<4,>=3.10
+Requires-Dist: python-dotenv>=1.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.3; extra == "dev"
+Requires-Dist: pytest-cov>=6.0; extra == "dev"
