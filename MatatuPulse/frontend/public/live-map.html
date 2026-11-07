@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mat3Route · Live map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111c33;
+      --panel-2: #17243d;
+      --line: #263553;
+      --text: #e6edf7;
+      --muted: #93a4bd;
+      --accent: #38bdf8;
+      --accent-2: #f97316;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --red: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    #app { display: flex; height: 100%; }
+
+    #sidebar {
+      width: 370px;
+      min-width: 370px;
+      height: 100%;
+      background: linear-gradient(180deg, var(--panel), #0c1527);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      z-index: 1200;
+    }
+
+    .sidebar-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+    }
+    .brand span {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-top: 2px;
+    }
+
+    #sidebar-close {
+      display: none;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      font-size: 12px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--line);
+      background: rgba(56, 189, 248, 0.04);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
+      flex: 0 0 auto;
+    }
+    .dot.error { background: var(--red); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15); }
+    .dot.loading { background: var(--amber); box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15); }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .toolbar button {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 9px;
+      padding: 9px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .toolbar button:hover { border-color: var(--accent); background: #1b2d4d; }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      padding: 12px 14px 0;
+    }
+    .tabs button {
+      flex: 1;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      padding: 9px 6px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .tabs button.active { color: var(--text); border-bottom-color: var(--accent); }
+    .tabs .count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 18px;
+      padding: 0 5px;
+      margin-left: 4px;
+      border-radius: 999px;
+      background: var(--panel-2);
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .panel { padding: 12px 14px; }
+    .panel[hidden] { display: none; }
+    #routes-panel[hidden], #incidents-panel[hidden] { display: none; }
+
+    .search, .select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #0b1425;
+      color: var(--text);
+      padding: 10px 11px;
+      font-size: 13px;
+      outline: none;
+      margin-bottom: 8px;
+    }
+    .search:focus, .select:focus { border-color: var(--accent); }
+    .select { appearance: none; cursor: pointer; }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      margin: 4px 0 10px;
+      cursor: pointer;
+    }
+    .toggle input { accent-color: var(--accent); }
+
+    .list {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding-right: 2px;
+      min-height: 80px;
+    }
+    #routes-panel, #incidents-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      flex: 1;
+    }
+    #routes-panel { padding-bottom: 0; }
+    #incidents-panel { padding-bottom: 0; }
+
+    .route-item, .incident-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      width: 100%;
+      text-align: left;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      color: inherit;
+      padding: 9px 8px;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .route-item:hover, .incident-item:hover { background: var(--panel-2); }
+    .route-item.selected { background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.45); }
+
+    .route-number {
+      flex: 0 0 auto;
+      min-width: 42px;
+      text-align: center;
+      border-radius: 7px;
+      padding: 4px 6px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #06121f;
+      background: var(--line-color, var(--accent));
+      margin-top: 1px;
+    }
+    .route-main, .incident-main { display: flex; flex-direction: column; min-width: 0; gap: 3px; }
+    .route-title, .incident-title {
+      font-size: 12.5px;
+      font-weight: 650;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .route-sub, .incident-sub {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.35;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      padding: 16px 8px;
+      text-align: center;
+    }
+
+    .severity-dot {
+      flex: 0 0 auto;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--dot, var(--amber));
+      margin-top: 5px;
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--dot, var(--amber)) 18%, transparent);
+    }
+
+    .sidebar-foot {
+      border-top: 1px solid var(--line);
+      padding: 10px 16px 12px;
+      font-size: 10.5px;
+      color: var(--muted);
+      line-height: 1.5;
+      background: #0a1221;
+    }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 6px; }
+    .legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .legend .line { width: 16px; height: 3px; border-radius: 2px; }
+    .sidebar-foot a { color: var(--accent); text-decoration: none; }
+
+    main { position: relative; flex: 1; min-width: 0; }
+    #map { position: absolute; inset: 0; background: #dce6f0; }
+
+    #sidebar-open {
+      display: none;
+      position: absolute;
+      z-index: 1100;
+      top: 14px;
+      left: 14px;
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
+      border: 1px solid rgba(15, 23, 42, 0.18);
+      background: #fff;
+      color: #0f172a;
+      font-size: 19px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(15, 23, 42, 0.18);
+    }
+
+    .detail-card {
+      position: absolute;
+      z-index: 1000;
+      left: 16px;
+      bottom: 16px;
+      width: min(360px, calc(100% - 76px));
+      background: rgba(15, 23, 42, 0.96);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 13px 14px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(6px);
+    }
+    .detail-card[hidden] { display: none; }
+    .detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .detail-head .badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #06121f;
+      border-radius: 6px;
+      padding: 2px 7px;
+      font-size: 11px;
+      font-weight: 800;
+      margin-right: 6px;
+    }
+    .detail-head strong { font-size: 13px; }
+    .detail-route { color: var(--muted); font-size: 12px; margin: 6px 0 10px; }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .detail-grid > div {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 7px 8px;
+    }
+    .detail-grid span { display: block; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); margin-bottom: 2px; }
+    .detail-grid strong { font-size: 12.5px; }
+    .detail-card.surge #detail-fare { color: var(--accent-2); }
+    .reasons { font-size: 11px; color: var(--muted); line-height: 1.45; }
+    #detail-close {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      flex: 0 0 auto;
+    }
+
+    .incident-icon-wrap { background: transparent; border: 0; }
+    .incident-pin {
+      display: block;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--pin, var(--amber));
+      border: 3px solid #fff;
+      box-shadow: 0 0 0 5px color-mix(in srgb, var(--pin, var(--amber)) 32%, transparent), 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .incident-pin.active { animation: pulse 1.8s infinite; }
+    .incident-pin.has-count {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-width: 2px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--pin, var(--amber)) 35%, transparent), 0 2px 8px rgba(0,0,0,0.4); }
+      50% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--pin, var(--amber)) 8%, transparent), 0 2px 8px rgba(0,0,0,0.4); }
+      100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--pin, var(--amber)) 35%, transparent), 0 2px 8px rgba(0,0,0,0.4); }
+    }
+
+    .leaflet-popup-content-wrapper {
+      border-radius: 11px;
+      box-shadow: 0 14px 38px rgba(15, 23, 42, 0.28);
+    }
+    .leaflet-popup-content { margin: 12px 14px; font-family: inherit; }
+    .popup-title { font-weight: 800; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 7px; }
+    .popup-title i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .popup-body { font-size: 12px; line-height: 1.45; color: #334155; margin: 0 0 8px; }
+    .popup-meta { font-size: 11px; color: #64748b; line-height: 1.55; }
+    .popup-route { font-weight: 700; color: #0f172a; }
+
+    @media (max-width: 820px) {
+      #sidebar {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: min(90vw, 370px);
+        min-width: 0;
+        transform: translateX(-105%);
+        transition: transform 0.22s ease;
+        box-shadow: 24px 0 60px rgba(0, 0, 0, 0.35);
+      }
+      #sidebar.open { transform: translateX(0); }
+      #sidebar-close, #sidebar-open { display: block; }
+      .detail-card { left: 14px; bottom: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div class="sidebar-head">
+        <div class="brand">Mat3Route <span>Live map</span></div>
+        <a href="/routes" style="color:var(--accent);text-decoration:none;font-size:12px;display:inline-flex;align-items:center;gap:4px;padding:4px 0;">← Back to MatatuPulse</a>
+        <button id="sidebar-close" aria-label="Close panel">×</button>
+      </div>
+
+      <div class="status">
+        <span id="status-dot" class="dot loading"></span>
+        <span id="status-text">Loading map data…</span>
+      </div>
+
+      <div class="toolbar">
+        <button id="locate" type="button">Near me</button>
+        <button id="fit" type="button">Fit routes</button>
+        <button id="refresh" type="button">Refresh</button>
+      </div>
+
+      <div class="tabs">
+        <button type="button" class="active" data-tab="routes">Routes <span class="count" id="route-count">0</span></button>
+        <button type="button" data-tab="incidents">Incidents <span class="count" id="incident-count">0</span></button>
+      </div>
+
+      <section id="routes-panel" class="panel">
+        <input id="search" class="search" type="search" placeholder="Search route, stage, or sacco" autocomplete="off" />
+        <select id="line-filter" class="select"></select>
+        <label class="toggle"><input type="checkbox" id="show-routes" checked /> Show routes on map</label>
+        <div id="route-list" class="list"></div>
+      </section>
+
+      <section id="incidents-panel" class="panel" hidden>
+        <select id="incident-status" class="select">
+          <option value="active">Active incidents (reported + verified)</option>
+          <option value="all">All incidents</option>
+          <option value="resolved">Resolved + rejected</option>
+        </select>
+        <select id="incident-severity" class="select">
+          <option value="all">All severities</option>
+          <option value="high">High severity</option>
+          <option value="medium">Medium severity</option>
+          <option value="low">Low severity</option>
+        </select>
+        <label class="toggle"><input type="checkbox" id="show-incidents" checked /> Show incidents on map</label>
+        <div id="incident-list" class="list"></div>
+      </section>
+
+      <div class="sidebar-foot">
+        <div class="legend">
+          <span><i class="line" style="background:#38bdf8"></i> Route</span>
+          <span><i style="background:#ef4444"></i> High</span>
+          <span><i style="background:#f59e0b"></i> Medium</span>
+          <span><i style="background:#22c55e"></i> Low</span>
+          <span><i style="background:#94a3b8"></i> Resolved</span>
+        </div>
+        Route paths follow OSRM driving directions between stage coordinates and
+        may differ from the exact sacco corridor. Basemap and routing data by
+        <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>.
+      </div>
+    </aside>
+
+    <main>
+      <button id="sidebar-open" aria-label="Open panel">☰</button>
+      <div id="map"></div>
+
+      <div id="route-detail" class="detail-card" hidden>
+        <div class="detail-head">
+          <div><span class="badge" id="detail-badge">—</span><strong id="detail-line">—</strong></div>
+          <button id="detail-close" aria-label="Close route details">×</button>
+        </div>
+        <div class="detail-route" id="detail-route">—</div>
+        <div class="detail-grid">
+          <div><span>Base fare</span><strong id="detail-base">—</strong></div>
+          <div><span>Current fare</span><strong id="detail-fare">—</strong></div>
+          <div><span>Surge</span><strong id="detail-multiplier">—</strong></div>
+          <div><span>Sacco</span><strong id="detail-sacco">—</strong></div>
+        </div>
+        <div class="reasons" id="detail-reasons"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    "use strict";
+    const EMBEDDED_LOCATIONS = {"Allsops": {"lat": -1.247572, "lon": 36.8698511}, "Athi River": {"lat": -1.4481149, "lon": 36.971587}, "Ayani": {"lat": -1.3054, "lon": 36.7759}, "Baba Ndogo": {"lat": -1.2439, "lon": 36.8813}, "Banana": {"lat": -1.1736827, "lon": 36.7575458}, "Bomas": {"lat": -1.3385795, "lon": 36.7661816}, "Buruburu": {"lat": -1.2861866, "lon": 36.8774336}, "Caltex": {"lat": -1.2997, "lon": 36.8873}, "City Stadium": {"lat": -1.2936738, "lon": 36.8423319}, "Dagoretti": {"lat": -1.2835913, "lon": 36.7246656}, "Dandora": {"lat": -1.2449083, "lon": 36.9060802}, "Deep West": {"lat": -1.3149503, "lon": 36.816742}, "Eastleigh": {"lat": -1.2743401, "lon": 36.8489576}, "Fedha Estate": {"lat": -1.31544, "lon": 36.8950289}, "GM": {"lat": -1.2863, "lon": 36.8415}, "Gasolina": {"lat": -1.16, "lon": 36.7}, "Gikomba": {"lat": -1.2867334, "lon": 36.8415284}, "Githunguri": {"lat": -1.0521605, "lon": 36.8083343}, "Githurai": {"lat": -1.202837, "lon": 36.9168588}, "Hardy": {"lat": -1.3231, "lon": 36.708}, "Hazina": {"lat": -1.3145132, "lon": 36.8490002}, "Highridge": {"lat": -1.2556111, "lon": 36.8065531}, "Highrise": {"lat": -1.309, "lon": 36.817}, "Huruma": {"lat": -1.2587253, "lon": 36.8715039}, "JKIA": {"lat": -1.3169486, "lon": 36.9288569}, "Jacaranda": {"lat": -1.2866816, "lon": 36.9064772}, "Joster": {"lat": -1.295, "lon": 36.9}, "KNH": {"lat": -1.299852, "lon": 36.8052065}, "KPA": {"lat": -1.33, "lon": 36.848}, "Kaberia": {"lat": -1.25, "lon": 36.72}, "Kahawa West": {"lat": -1.1863052, "lon": 36.9068145}, "Kangemi": {"lat": -1.2680073, "lon": 36.7522966}, "Karen": {"lat": -1.3283746, "lon": 36.7049676}, "Kariobangi North": {"lat": -1.2531457, "lon": 36.8815023}, "Kariobangi South": {"lat": -1.2663343, "lon": 36.8820657}, "Kawangware": {"lat": -1.2784631, "lon": 36.751643}, "Kayole": {"lat": -1.2667475, "lon": 36.9193623}, "Kenyatta": {"lat": -1.3008, "lon": 36.8072}, "Kiambu": {"lat": -1.1663925, "lon": 36.8252791}, "Kibera": {"lat": -1.3113332, "lon": 36.7890001}, "Kikuyu": {"lat": -1.2438129, "lon": 36.6646904}, "Kiserian": {"lat": -1.4304885, "lon": 36.6869192}, "Kitengela": {"lat": -1.4745409, "lon": 36.9589935}, "Komarock": {"lat": -1.2726556, "lon": 36.9077371}, "Komarock Roundabout": {"lat": -1.272, "lon": 36.905}, "Langata": {"lat": -1.3328938, "lon": 36.7816659}, "Lavington": {"lat": -1.2740678, "lon": 36.7762269}, "Limuru": {"lat": -1.1458738, "lon": 36.6375998}, "Lucky Summer": {"lat": -1.2395593, "lon": 36.8979793}, "Lunga Lunga": {"lat": -1.3095, "lon": 36.857}, "Mama Lucy": {"lat": -1.2745532, "lon": 36.8992464}, "Maringo": {"lat": -1.2949998, "lon": 36.8660393}, "Marurui": {"lat": -1.2062212, "lon": 36.8708795}, "Mathare North": {"lat": -1.2535108, "lon": 36.8677944}, "Muthurwa": {"lat": -1.2889623, "lon": 36.8312652}, "Mwiki": {"lat": -1.2327573, "lon": 36.9332678}, "Nairobi CBD": {"lat": -1.2900328, "lon": 36.8249721}, "Nairobi Hospital": {"lat": -1.2967124, "lon": 36.8044146}, "Nakumatt": {"lat": -1.267, "lon": 36.75}, "Ndenderu": {"lat": -1.1939265, "lon": 36.7449575}, "Ndumberi": {"lat": -1.1510355, "lon": 36.8049376}, "Ngong": {"lat": -1.3666, "lon": 36.65}, "Ngumba": {"lat": -1.2323192, "lon": 36.8842965}, "Ngumo": {"lat": -1.3081231, "lon": 36.7981642}, "Nyayo": {"lat": -1.2586126, "lon": 36.8852305}, "Othaya": {"lat": -1.285344, "lon": 36.7749715}, "Pipeline Jogoo": {"lat": -1.312, "lon": 36.885}, "Pipeline Mombasa": {"lat": -1.3370458, "lon": 36.8959243}, "Redhill": {"lat": -1.1688245, "lon": 36.7067441}, "Rikana": {"lat": -1.2971, "lon": 36.8942}, "Rongai": {"lat": -1.395968, "lon": 36.7520106}, "Roundabout": {"lat": -1.2923, "lon": 36.841}, "Ruai": {"lat": -1.2689967, "lon": 36.9915483}, "Ruaka": {"lat": -1.205646, "lon": 36.7844571}, "Ruiru": {"lat": -1.1774574, "lon": 36.9824291}, "Ruiru Town": {"lat": -1.1472712, "lon": 36.9604486}, "South B": {"lat": -1.3141724, "lon": 36.8376708}, "South C": {"lat": -1.3188367, "lon": 36.8278221}, "Strathmore": {"lat": -1.3103457, "lon": 36.8126428}, "Sunton": {"lat": -1.234369, "lon": 36.9199887}, "Thika": {"lat": -1.036648, "lon": 37.077523}, "Umoja": {"lat": -1.2834, "lon": 36.8928}, "Umoja/Donholm": {"lat": -1.2992, "lon": 36.8887}, "Utawala": {"lat": -1.2843808, "lon": 36.9680714}, "Uthiru": {"lat": -1.2606817, "lon": 36.7112127}, "Wangige": {"lat": -1.2199335, "lon": 36.7130199}, "Westlands": {"lat": -1.2465281, "lon": 36.7860759}, "Yaya": {"lat": -1.292713, "lon": 36.787988}};
+    const EMBEDDED_GEOMETRY = {"Allsops|Dandora": {"distance_km": 7.3, "duration_min": 10.7, "path": [[-1.24774, 36.8698], [-1.24762, 36.86953], [-1.24722, 36.86982], [-1.24691, 36.8692], [-1.24561, 36.86772], [-1.24556, 36.8679], [-1.24678, 36.86943], [-1.24722, 36.8707], [-1.24719, 36.87465], [-1.24758, 36.87621], [-1.24835, 36.87725], [-1.24993, 36.87848], [-1.25131, 36.87881], [-1.26179, 36.87915], [-1.26232, 36.87969], [-1.26171, 36.88501], [-1.26076, 36.88898], [-1.26023, 36.8905], [-1.25824, 36.89323], [-1.25667, 36.89782], [-1.25612, 36.8981], [-1.25479, 36.89961], [-1.25242, 36.90238], [-1.25121, 36.90418], [-1.25097, 36.90424], [-1.25088, 36.90394], [-1.25055, 36.90368], [-1.24865, 36.906], [-1.24707, 36.90474], [-1.24623, 36.90581], [-1.24575, 36.90558], [-1.24497, 36.90654], [-1.2447, 36.90635]]}, "Athi River|Kitengela": {"distance_km": 3.7, "duration_min": 5.7, "path": [[-1.44761, 36.97163], [-1.44748, 36.97053], [-1.44656, 36.96928], [-1.44651, 36.96825], [-1.44809, 36.96836], [-1.45063, 36.96825], [-1.45348, 36.96764], [-1.45571, 36.96675], [-1.46455, 36.96234], [-1.4674, 36.96127], [-1.47456, 36.95904]]}, "Bomas|Dagoretti": {"distance_km": 14.3, "duration_min": 22.0, "path": [[-1.33885, 36.76608], [-1.33919, 36.76696], [-1.34221, 36.76704], [-1.34185, 36.76834], [-1.34068, 36.77012], [-1.33602, 36.77617], [-1.33288, 36.78151], [-1.33015, 36.78027], [-1.32936, 36.78008], [-1.3277, 36.78004], [-1.32626, 36.78039], [-1.31759, 36.78759], [-1.31343, 36.79075], [-1.31213, 36.79124], [-1.31057, 36.79131], [-1.30945, 36.79104], [-1.30523, 36.78855], [-1.30354, 36.78815], [-1.30335, 36.78769], [-1.30392, 36.77563], [-1.30365, 36.77498], [-1.30292, 36.77438], [-1.30206, 36.77413], [-1.30034, 36.77399], [-1.3005, 36.76944], [-1.30006, 36.76626], [-1.29977, 36.76556], [-1.29912, 36.76147], [-1.2993, 36.76046], [-1.29866, 36.76021], [-1.29838, 36.75978], [-1.29799, 36.75765], [-1.29763, 36.75693], [-1.29519, 36.75539], [-1.29334, 36.75332], [-1.29296, 36.75247], [-1.29137, 36.7471], [-1.28551, 36.73871], [-1.28472, 36.73784], [-1.28462, 36.73699], [-1.28376, 36.73446], [-1.28365, 36.73365], [-1.28403, 36.72922], [-1.28269, 36.72458], [-1.28353, 36.72441]]}, "Caltex|Kayole": {"distance_km": 6.1, "duration_min": 8.9, "path": [[-1.29969, 36.88735], [-1.29986, 36.88697], [-1.29519, 36.88606], [-1.29484, 36.88574], [-1.29495, 36.88537], [-1.29534, 36.88532], [-1.29557, 36.88576], [-1.29496, 36.88689], [-1.29445, 36.88729], [-1.29448, 36.88769], [-1.29425, 36.88821], [-1.2869, 36.89776], [-1.28627, 36.89792], [-1.28316, 36.90222], [-1.28279, 36.9025], [-1.28275, 36.90292], [-1.28149, 36.9052], [-1.27976, 36.90619], [-1.27811, 36.90796], [-1.27626, 36.90874], [-1.2746, 36.91051], [-1.27297, 36.91105], [-1.27069, 36.91307], [-1.26888, 36.91371], [-1.26639, 36.91607], [-1.26709, 36.91732], [-1.26627, 36.91767], [-1.26653, 36.91872], [-1.26692, 36.91929]]}, "City Stadium|GM": {"distance_km": 1.8, "duration_min": 4.1, "path": [[-1.29384, 36.8431], [-1.29401, 36.84454], [-1.29315, 36.84441], [-1.29263, 36.84459], [-1.29281, 36.84543], [-1.2895, 36.84617], [-1.28903, 36.84417], [-1.28637, 36.84465], [-1.28549, 36.84252], [-1.28612, 36.84208], [-1.28559, 36.84168], [-1.28611, 36.84134]]}, "City Stadium|Nyayo": {"distance_km": 8.8, "duration_min": 11.5, "path": [[-1.29384, 36.8431], [-1.29401, 36.84454], [-1.29315, 36.84441], [-1.29263, 36.84459], [-1.29408, 36.85125], [-1.29403, 36.85199], [-1.29344, 36.85218], [-1.2912, 36.85253], [-1.29065, 36.85249], [-1.28817, 36.85183], [-1.28501, 36.8515], [-1.2665, 36.84771], [-1.26595, 36.85038], [-1.26584, 36.8586], [-1.26445, 36.85987], [-1.26399, 36.86061], [-1.26144, 36.86953], [-1.26255, 36.87746], [-1.26253, 36.87839], [-1.26192, 36.87907], [-1.26232, 36.87969], [-1.26209, 36.88186], [-1.26193, 36.88186], [-1.26158, 36.88247], [-1.26016, 36.88364], [-1.25924, 36.88473], [-1.25845, 36.88504]]}, "Eastleigh|Kayole": {"distance_km": 11.2, "duration_min": 13.4, "path": [[-1.27427, 36.84929], [-1.2665, 36.84771], [-1.26595, 36.85038], [-1.26584, 36.8586], [-1.26445, 36.85987], [-1.26399, 36.86061], [-1.26144, 36.86953], [-1.26256, 36.87764], [-1.26253, 36.87839], [-1.26192, 36.87907], [-1.26232, 36.87969], [-1.26171, 36.88501], [-1.26098, 36.88824], [-1.26023, 36.8905], [-1.25824, 36.89323], [-1.25645, 36.89871], [-1.2564, 36.8995], [-1.25654, 36.90007], [-1.25765, 36.90279], [-1.25664, 36.90569], [-1.25675, 36.90789], [-1.25615, 36.90875], [-1.25476, 36.91006], [-1.25448, 36.9107], [-1.25442, 36.91145], [-1.25755, 36.9119], [-1.25955, 36.91237], [-1.2607, 36.90987], [-1.26145, 36.90866], [-1.26166, 36.90874], [-1.26289, 36.90985], [-1.26187, 36.91119], [-1.26198, 36.91239], [-1.26395, 36.91434], [-1.26436, 36.91508], [-1.26489, 36.91662], [-1.26639, 36.91607], [-1.26675, 36.91652], [-1.26709, 36.91732], [-1.26627, 36.91767], [-1.26653, 36.91872], [-1.26692, 36.91929]]}, "Gikomba|Dandora": {"distance_km": 11.2, "duration_min": 15.9, "path": [[-1.28619, 36.84125], [-1.28559, 36.84168], [-1.28612, 36.84209], [-1.28448, 36.84315], [-1.28517, 36.84487], [-1.28517, 36.84737], [-1.27399, 36.84518], [-1.2673, 36.8437], [-1.26596, 36.85025], [-1.26584, 36.8586], [-1.26445, 36.85987], [-1.26399, 36.86061], [-1.26144, 36.86953], [-1.26246, 36.87656], [-1.26253, 36.87839], [-1.26192, 36.87907], [-1.26232, 36.87969], [-1.26174, 36.88478], [-1.26048, 36.88981], [-1.26023, 36.8905], [-1.25824, 36.89323], [-1.25667, 36.89782], [-1.25612, 36.8981], [-1.25479, 36.89961], [-1.25242, 36.90238], [-1.25121, 36.90418], [-1.25097, 36.90424], [-1.25088, 36.90394], [-1.25055, 36.90368], [-1.24865, 36.906], [-1.24707, 36.90474], [-1.24623, 36.90581], [-1.24575, 36.90558], [-1.24497, 36.90654], [-1.2447, 36.90635]]}, "Karen|Dagoretti": {"distance_km": 8.7, "duration_min": 17.2, "path": [[-1.32822, 36.70495], [-1.3281, 36.70596], [-1.32785, 36.70598], [-1.32646, 36.70559], [-1.32329, 36.70421], [-1.32202, 36.70711], [-1.32201, 36.70761], [-1.31997, 36.71387], [-1.31446, 36.72023], [-1.31282, 36.72243], [-1.31072, 36.72471], [-1.30987, 36.72633], [-1.30869, 36.72771], [-1.30814, 36.72877], [-1.30798, 36.72957], [-1.30831, 36.73179], [-1.30817, 36.73207], [-1.30428, 36.73184], [-1.30224, 36.7311], [-1.30319, 36.72735], [-1.30319, 36.72566], [-1.30277, 36.72399], [-1.29983, 36.72062], [-1.29977, 36.71894], [-1.2986, 36.71922], [-1.29719, 36.72026], [-1.29736, 36.72071], [-1.29571, 36.72157], [-1.29538, 36.72138], [-1.29361, 36.72169], [-1.29344, 36.72138], [-1.28993, 36.72272], [-1.2896, 36.72256], [-1.28908, 36.72276], [-1.28852, 36.72223], [-1.28687, 36.72234], [-1.2868, 36.72247], [-1.28483, 36.72252], [-1.28464, 36.72413], [-1.28353, 36.72441]]}, "Komarock Roundabout|Eastleigh": {"distance_km": 10.5, "duration_min": 12.5, "path": [[-1.27203, 36.90504], [-1.27245, 36.90475], [-1.2722, 36.9045], [-1.27069, 36.90494], [-1.27056, 36.90468], [-1.26687, 36.90624], [-1.26547, 36.9045], [-1.26829, 36.90248], [-1.26963, 36.90132], [-1.27121, 36.89963], [-1.27285, 36.89736], [-1.27406, 36.89506], [-1.27486, 36.89292], [-1.27542, 36.89054], [-1.27603, 36.88674], [-1.27653, 36.88586], [-1.27813, 36.88428], [-1.27852, 36.88318], [-1.27891, 36.8827], [-1.27891, 36.88244], [-1.27857, 36.88215], [-1.27726, 36.88217], [-1.27341, 36.88147], [-1.26278, 36.87892], [-1.26254, 36.87853], [-1.26243, 36.87625], [-1.26141, 36.86974], [-1.26399, 36.86061], [-1.26445, 36.85987], [-1.26552, 36.85911], [-1.26582, 36.85865], [-1.26595, 36.85038], [-1.26649, 36.84793], [-1.26717, 36.84791], [-1.27487, 36.84951], [-1.27427, 36.84929]]}, "Mama Lucy|Mwiki": {"distance_km": 8.7, "duration_min": 9.6, "path": [[-1.27439, 36.89915], [-1.27467, 36.89865], [-1.27409, 36.89846], [-1.27428, 36.89813], [-1.27285, 36.89736], [-1.27121, 36.89963], [-1.26963, 36.90132], [-1.26495, 36.90492], [-1.2628, 36.90689], [-1.2607, 36.90987], [-1.25955, 36.91237], [-1.25911, 36.91382], [-1.2576, 36.9218], [-1.25612, 36.92705], [-1.25465, 36.93099], [-1.25052, 36.93984], [-1.24994, 36.93973], [-1.24891, 36.94065], [-1.24819, 36.9409], [-1.24506, 36.94039], [-1.24392, 36.9404], [-1.23823, 36.94211], [-1.23754, 36.9413], [-1.23727, 36.94072], [-1.2367, 36.9375], [-1.23675, 36.93678], [-1.23507, 36.933], [-1.23294, 36.93395], [-1.23267, 36.9333]]}, "Muthurwa|Mwiki": {"distance_km": 17.1, "duration_min": 18.8, "path": [[-1.28882, 36.8312], [-1.28895, 36.83094], [-1.28791, 36.83046], [-1.28786, 36.83015], [-1.28769, 36.8301], [-1.28747, 36.83077], [-1.28699, 36.83142], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28242, 36.83328], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27075, 36.83656], [-1.27011, 36.83656], [-1.26951, 36.83631], [-1.26711, 36.83453], [-1.26658, 36.83457], [-1.26567, 36.83527], [-1.26433, 36.83686], [-1.26243, 36.84002], [-1.26079, 36.84209], [-1.25882, 36.84603], [-1.25808, 36.8481], [-1.2579, 36.85261], [-1.25726, 36.85404], [-1.25547, 36.85637], [-1.25349, 36.85849], [-1.24342, 36.86814], [-1.23729, 36.87098], [-1.23541, 36.87232], [-1.22969, 36.8793], [-1.22429, 36.88668], [-1.22306, 36.88806], [-1.2193, 36.89133], [-1.21934, 36.89166], [-1.22004, 36.89195], [-1.22056, 36.89248], [-1.2207, 36.89313], [-1.21775, 36.8969], [-1.21745, 36.8975], [-1.21886, 36.903], [-1.22087, 36.90529], [-1.22395, 36.90825], [-1.22307, 36.91195], [-1.22954, 36.92085], [-1.23424, 36.93118], [-1.23214, 36.93212], [-1.23267, 36.9333]]}, "Nairobi CBD|Athi River": {"distance_km": 27.6, "duration_min": 24.8, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29266, 36.82097], [-1.29292, 36.82075], [-1.29319, 36.82078], [-1.29729, 36.82341], [-1.30106, 36.82473], [-1.31364, 36.83065], [-1.3151, 36.83163], [-1.31671, 36.83349], [-1.32995, 36.85595], [-1.33052, 36.85703], [-1.33105, 36.85866], [-1.33124, 36.86029], [-1.33116, 36.86168], [-1.32851, 36.88129], [-1.32856, 36.8831], [-1.32889, 36.88474], [-1.33053, 36.88719], [-1.34444, 36.90284], [-1.3465, 36.90425], [-1.348, 36.90489], [-1.35907, 36.90794], [-1.3607, 36.90856], [-1.36202, 36.90927], [-1.36414, 36.91106], [-1.3774, 36.92614], [-1.38037, 36.92934], [-1.3829, 36.93162], [-1.38886, 36.93641], [-1.39479, 36.94039], [-1.39949, 36.94318], [-1.40127, 36.94396], [-1.41951, 36.95377], [-1.42325, 36.9562], [-1.42568, 36.95815], [-1.42731, 36.95971], [-1.43041, 36.96328], [-1.43173, 36.96552], [-1.4317, 36.96596], [-1.43121, 36.96704], [-1.43133, 36.96747], [-1.43163, 36.96777], [-1.43228, 36.96793], [-1.43403, 36.96771], [-1.43441, 36.96752], [-1.435, 36.96681], [-1.43552, 36.96666], [-1.43666, 36.96672], [-1.43845, 36.96719], [-1.44076, 36.96857], [-1.44198, 36.96861], [-1.44608, 36.96823], [-1.44642, 36.96846], [-1.44658, 36.96934], [-1.44748, 36.97053], [-1.44761, 36.97163]]}, "Nairobi CBD|Ayani": {"distance_km": 7.2, "duration_min": 11.2, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29292, 36.82047], [-1.2932, 36.81811], [-1.29381, 36.81558], [-1.2951, 36.81354], [-1.29534, 36.81218], [-1.29548, 36.80952], [-1.29638, 36.80847], [-1.29701, 36.80734], [-1.29791, 36.80336], [-1.29827, 36.80299], [-1.29809, 36.80235], [-1.29933, 36.79544], [-1.2997, 36.78763], [-1.29986, 36.78746], [-1.30335, 36.78769], [-1.30394, 36.77609], [-1.30371, 36.77505], [-1.30484, 36.77458], [-1.30532, 36.77536], [-1.3052, 36.77589]]}, "Nairobi CBD|Baba Ndogo": {"distance_km": 10.7, "duration_min": 11.8, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28219, 36.83323], [-1.28161, 36.83293], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27097, 36.83651], [-1.27028, 36.83658], [-1.26973, 36.83642], [-1.26717, 36.83456], [-1.26685, 36.83449], [-1.26605, 36.83495], [-1.2649, 36.83612], [-1.26243, 36.84002], [-1.26079, 36.84209], [-1.2584, 36.84692], [-1.25808, 36.8481], [-1.25794, 36.85238], [-1.25726, 36.85404], [-1.2546, 36.85738], [-1.24773, 36.86401], [-1.24704, 36.86448], [-1.24342, 36.86792], [-1.24146, 36.86882], [-1.24151, 36.86933], [-1.24191, 36.8695], [-1.2443, 36.86816], [-1.24538, 36.86785], [-1.24653, 36.869], [-1.24709, 36.8703], [-1.24717, 36.87456], [-1.2468, 36.875], [-1.24477, 36.8756], [-1.24392, 36.8757], [-1.24366, 36.87615], [-1.24393, 36.8813]]}, "Nairobi CBD|Banana": {"distance_km": 21.0, "duration_min": 21.5, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28575, 36.83213], [-1.28367, 36.83317], [-1.28259, 36.8333], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27075, 36.83656], [-1.27011, 36.83656], [-1.26951, 36.83631], [-1.26717, 36.83456], [-1.26672, 36.83451], [-1.26567, 36.83527], [-1.2649, 36.83612], [-1.26243, 36.84002], [-1.26086, 36.84178], [-1.25606, 36.84341], [-1.24903, 36.84717], [-1.24803, 36.84702], [-1.24652, 36.84582], [-1.24371, 36.84457], [-1.23244, 36.84327], [-1.23179, 36.8429], [-1.23044, 36.84158], [-1.22948, 36.84089], [-1.22415, 36.83825], [-1.22118, 36.83567], [-1.22041, 36.83548], [-1.21758, 36.83583], [-1.21573, 36.83524], [-1.2158, 36.83219], [-1.21629, 36.82856], [-1.21654, 36.82498], [-1.21625, 36.81925], [-1.21558, 36.81516], [-1.21474, 36.81174], [-1.21341, 36.8078], [-1.21205, 36.80473], [-1.20789, 36.79681], [-1.20783, 36.79631], [-1.20759, 36.79607], [-1.20721, 36.79504], [-1.20644, 36.79148], [-1.20483, 36.78803], [-1.20449, 36.78661], [-1.20465, 36.78652], [-1.20474, 36.78678], [-1.20507, 36.78667], [-1.2058, 36.78603], [-1.20584, 36.78555], [-1.20197, 36.78543], [-1.19945, 36.78456], [-1.19796, 36.78378], [-1.1917, 36.77547], [-1.18959, 36.77315], [-1.18887, 36.77213], [-1.18712, 36.76937], [-1.18539, 36.76525], [-1.18486, 36.76444], [-1.18382, 36.76359], [-1.17845, 36.76052], [-1.17446, 36.75897], [-1.1746, 36.75834], [-1.17379, 36.75803], [-1.17391, 36.7576]]}, "Nairobi CBD|Buruburu": {"distance_km": 7.4, "duration_min": 11.3, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28548, 36.83223], [-1.28543, 36.83363], [-1.28554, 36.83393], [-1.28617, 36.8342], [-1.28766, 36.83785], [-1.28946, 36.84108], [-1.28999, 36.84138], [-1.29153, 36.84119], [-1.29194, 36.84159], [-1.29408, 36.85125], [-1.29407, 36.85191], [-1.29392, 36.85209], [-1.29298, 36.85225], [-1.2926, 36.85369], [-1.28864, 36.86275], [-1.28867, 36.86391], [-1.28853, 36.86437], [-1.28788, 36.86497], [-1.28657, 36.86554], [-1.28601, 36.86649], [-1.28628, 36.86665], [-1.28577, 36.86753], [-1.28428, 36.86874], [-1.2819, 36.87142], [-1.2841, 36.87335], [-1.28509, 36.87382], [-1.2847, 36.87512], [-1.28483, 36.87534], [-1.28413, 36.87658], [-1.28575, 36.87746]]}, "Nairobi CBD|Dagoretti": {"distance_km": 15.0, "duration_min": 19.3, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28904, 36.82739], [-1.28482, 36.82517], [-1.28006, 36.81919], [-1.28001, 36.81865], [-1.28192, 36.8151], [-1.28188, 36.81482], [-1.27931, 36.81394], [-1.27658, 36.81336], [-1.27496, 36.81241], [-1.2741, 36.81153], [-1.27298, 36.80942], [-1.27234, 36.80864], [-1.26514, 36.80231], [-1.26475, 36.80174], [-1.26399, 36.80147], [-1.26221, 36.79986], [-1.2617, 36.79888], [-1.26132, 36.79739], [-1.26105, 36.79326], [-1.26012, 36.78985], [-1.25893, 36.78005], [-1.25905, 36.77728], [-1.26083, 36.76855], [-1.2611, 36.76784], [-1.26262, 36.76541], [-1.26307, 36.76408], [-1.26318, 36.76407], [-1.26318, 36.76438], [-1.26752, 36.7623], [-1.26722, 36.76135], [-1.26953, 36.76106], [-1.27037, 36.7611], [-1.27093, 36.76074], [-1.27139, 36.76067], [-1.2739, 36.76058], [-1.27479, 36.75823], [-1.27606, 36.75599], [-1.2778, 36.75242], [-1.2787, 36.74953], [-1.28081, 36.74115], [-1.28163, 36.73894], [-1.2819, 36.73689], [-1.28249, 36.73703], [-1.28364, 36.73356], [-1.28403, 36.72922], [-1.28269, 36.72458], [-1.28353, 36.72441]]}, "Nairobi CBD|Dandora": {"distance_km": 12.2, "duration_min": 16.9, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28747, 36.83077], [-1.28683, 36.83152], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28242, 36.83328], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27097, 36.83651], [-1.27025, 36.83657], [-1.26895, 36.84191], [-1.26728, 36.84374], [-1.26599, 36.85005], [-1.26584, 36.8586], [-1.26445, 36.85987], [-1.26399, 36.86061], [-1.26144, 36.86953], [-1.26246, 36.87656], [-1.26253, 36.87839], [-1.26192, 36.87907], [-1.26232, 36.87969], [-1.26171, 36.88501], [-1.26098, 36.88824], [-1.26023, 36.8905], [-1.25824, 36.89323], [-1.25667, 36.89782], [-1.25612, 36.8981], [-1.25479, 36.89961], [-1.25242, 36.90238], [-1.25121, 36.90418], [-1.25097, 36.90424], [-1.25088, 36.90394], [-1.25055, 36.90368], [-1.24865, 36.906], [-1.24707, 36.90474], [-1.24623, 36.90581], [-1.24575, 36.90558], [-1.24497, 36.90654], [-1.2447, 36.90635]]}, "Nairobi CBD|Deep West": {"distance_km": 4.7, "duration_min": 7.3, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29266, 36.82097], [-1.29303, 36.82075], [-1.29828, 36.82375], [-1.30114, 36.82485], [-1.30499, 36.82673], [-1.30547, 36.82552], [-1.30601, 36.82212], [-1.30675, 36.82007], [-1.30722, 36.81983], [-1.30746, 36.8195], [-1.30916, 36.8187], [-1.3126, 36.81604], [-1.31379, 36.81548], [-1.31456, 36.81683], [-1.31483, 36.8166]]}, "Nairobi CBD|Eastleigh": {"distance_km": 4.6, "duration_min": 5.7, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28947, 36.82707], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28747, 36.83077], [-1.28699, 36.83142], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28242, 36.83328], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27919, 36.83352], [-1.27748, 36.83405], [-1.27685, 36.8344], [-1.27738, 36.83631], [-1.27997, 36.84297], [-1.27996, 36.84617], [-1.27905, 36.85028], [-1.27427, 36.84929]]}, "Nairobi CBD|Fedha Estate": {"distance_km": 10.4, "duration_min": 14.5, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28548, 36.83223], [-1.28543, 36.83363], [-1.28554, 36.83393], [-1.28617, 36.8342], [-1.28766, 36.83785], [-1.28946, 36.84108], [-1.28999, 36.84138], [-1.29153, 36.84119], [-1.29194, 36.84159], [-1.29408, 36.85125], [-1.29409, 36.85212], [-1.29465, 36.85362], [-1.29777, 36.86897], [-1.29776, 36.87018], [-1.29608, 36.8822], [-1.29607, 36.8828], [-1.29643, 36.88433], [-1.29494, 36.88692], [-1.29453, 36.88706], [-1.29425, 36.88679], [-1.29427, 36.88649], [-1.29458, 36.88628], [-1.29596, 36.88645], [-1.30106, 36.88748], [-1.30427, 36.88844], [-1.30824, 36.89033], [-1.31549, 36.89486], [-1.3154, 36.895]]}, "Nairobi CBD|Githunguri": {"distance_km": 38.9, "duration_min": 37.6, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28575, 36.83213], [-1.28367, 36.83317], [-1.28259, 36.8333], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27075, 36.83656], [-1.27011, 36.83656], [-1.26951, 36.83631], [-1.26717, 36.83456], [-1.26672, 36.83451], [-1.26567, 36.83527], [-1.2649, 36.83612], [-1.26243, 36.84002], [-1.26086, 36.84178], [-1.25606, 36.84341], [-1.24903, 36.84717], [-1.24803, 36.84702], [-1.24652, 36.84582], [-1.24371, 36.84457], [-1.23244, 36.84327], [-1.23179, 36.8429], [-1.23044, 36.84158], [-1.22948, 36.84089], [-1.22415, 36.83825], [-1.22154, 36.83587], [-1.22105, 36.83561], [-1.22041, 36.83548], [-1.21812, 36.83584], [-1.21725, 36.83578], [-1.21084, 36.83319], [-1.20885, 36.83301], [-1.20721, 36.83211], [-1.20637, 36.83191], [-1.20581, 36.83201], [-1.20476, 36.83254], [-1.19856, 36.83589], [-1.19451, 36.83934], [-1.19366, 36.83983], [-1.19242, 36.83996], [-1.18196, 36.83826], [-1.17885, 36.8374], [-1.1783, 36.83877], [-1.17711, 36.8393], [-1.17537, 36.83922], [-1.17305, 36.84143], [-1.17186, 36.84188], [-1.17115, 36.84168], [-1.16894, 36.83933], [-1.16704, 36.83816], [-1.16631, 36.83825], [-1.16543, 36.83958], [-1.16457, 36.84036], [-1.16396, 36.84051], [-1.16316, 36.84045], [-1.16097, 36.83982], [-1.15949, 36.8392], [-1.15807, 36.83939], [-1.15708, 36.83933], [-1.15534, 36.83856], [-1.15341, 36.83855], [-1.15148, 36.8375], [-1.14994, 36.836], [-1.14923, 36.83589], [-1.149, 36.83608], [-1.14901, 36.83629], [-1.14991, 36.83773], [-1.15031, 36.83973], [-1.15145, 36.84292], [-1.15137, 36.84329], [-1.14558, 36.8453], [-1.14455, 36.84533], [-1.14271, 36.84479], [-1.14243, 36.84508], [-1.14231, 36.84613], [-1.14191, 36.84649], [-1.13998, 36.84634], [-1.13687, 36.84744], [-1.13592, 36.84898], [-1.13492, 36.84996], [-1.13473, 36.85076], [-1.13419, 36.85171], [-1.13403, 36.85363], [-1.13221, 36.85529], [-1.13164, 36.85554], [-1.13116, 36.85554], [-1.12965, 36.85496], [-1.12905, 36.85452], [-1.12845, 36.85438], [-1.12756, 36.85365], [-1.12672, 36.85323], [-1.12611, 36.85169], [-1.12559, 36.8509], [-1.1253, 36.85105], [-1.12522, 36.85182], [-1.12504, 36.85207], [-1.12408, 36.85203], [-1.12336, 36.8526], [-1.1201, 36.85045], [-1.11876, 36.85037], [-1.11819, 36.85017], [-1.11743, 36.85053], [-1.11638, 36.85244], [-1.11472, 36.85391], [-1.11307, 36.85428], [-1.11208, 36.85434], [-1.10992, 36.85318], [-1.10877, 36.85187], [-1.10745, 36.84944], [-1.1067, 36.84908], [-1.10485, 36.84758], [-1.10342, 36.84776], [-1.10326, 36.84756], [-1.10316, 36.84684], [-1.10258, 36.8461], [-1.10235, 36.84605], [-1.10229, 36.84631], [-1.10265, 36.84694], [-1.10269, 36.84836], [-1.10461, 36.84989], [-1.10472, 36.85042], [-1.10445, 36.85074], [-1.10242, 36.85172], [-1.1007, 36.85345], [-1.09902, 36.85588], [-1.09871, 36.85856], [-1.09884, 36.85934], [-1.10003, 36.86189], [-1.1, 36.86354], [-1.10053, 36.86532], [-1.10075, 36.8658], [-1.10174, 36.86694], [-1.1017, 36.86728], [-1.1012, 36.86756], [-1.09949, 36.86696], [-1.09827, 36.86697], [-1.09613, 36.86596], [-1.09472, 36.86589], [-1.09403, 36.86619], [-1.09294, 36.86538], [-1.09012, 36.86405], [-1.08631, 36.86119], [-1.08333, 36.85963], [-1.0819, 36.85855], [-1.08169, 36.85799], [-1.08154, 36.85584], [-1.08113, 36.85465], [-1.07978, 36.85222], [-1.07865, 36.85108], [-1.07826, 36.85027], [-1.07885, 36.84352], [-1.07748, 36.83997], [-1.0753, 36.83705], [-1.07317, 36.83571], [-1.07154, 36.83299], [-1.07091, 36.83319], [-1.06923, 36.83241], [-1.06877, 36.83201], [-1.0683, 36.83125], [-1.06809, 36.82997], [-1.06769, 36.82905], [-1.06767, 36.82838], [-1.06654, 36.82641], [-1.06619, 36.82508], [-1.06492, 36.82207], [-1.06406, 36.8207], [-1.06209, 36.81857], [-1.06147, 36.81724], [-1.06014, 36.81588], [-1.05944, 36.81455], [-1.05843, 36.81391], [-1.05776, 36.8132], [-1.05574, 36.8127], [-1.05389, 36.81204], [-1.05166, 36.80934]]}, "Nairobi CBD|Githurai": {"distance_km": 15.5, "duration_min": 14.2, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28219, 36.83323], [-1.28161, 36.83293], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27075, 36.83656], [-1.27011, 36.83656], [-1.26951, 36.83631], [-1.26711, 36.83453], [-1.26658, 36.83457], [-1.26567, 36.83527], [-1.26433, 36.83686], [-1.26243, 36.84002], [-1.26079, 36.84209], [-1.2584, 36.84692], [-1.25808, 36.8481], [-1.2579, 36.85261], [-1.25726, 36.85404], [-1.2565, 36.85506], [-1.2546, 36.85738], [-1.24342, 36.86814], [-1.23729, 36.87098], [-1.2361, 36.87172], [-1.23487, 36.87289], [-1.22907, 36.88011], [-1.22429, 36.88668], [-1.22279, 36.88831], [-1.21963, 36.89116], [-1.21935, 36.89125], [-1.21921, 36.89167], [-1.21493, 36.89663], [-1.21372, 36.89889], [-1.20952, 36.91114], [-1.20861, 36.91231], [-1.20404, 36.91645], [-1.20374, 36.91624], [-1.20373, 36.91562], [-1.20348, 36.91651], [-1.20309, 36.91715]]}, "Nairobi CBD|Hardy": {"distance_km": 14.9, "duration_min": 21.3, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29292, 36.82047], [-1.2932, 36.81811], [-1.29381, 36.81558], [-1.2951, 36.81354], [-1.29534, 36.81218], [-1.29548, 36.80952], [-1.29638, 36.80847], [-1.29701, 36.80734], [-1.29791, 36.80336], [-1.29827, 36.80299], [-1.29809, 36.80235], [-1.29927, 36.79592], [-1.3005, 36.76944], [-1.30006, 36.76626], [-1.29977, 36.76556], [-1.29942, 36.76303], [-1.29899, 36.76159], [-1.29907, 36.76071], [-1.30125, 36.75547], [-1.30578, 36.74285], [-1.30693, 36.73765], [-1.30855, 36.73215], [-1.30854, 36.73165], [-1.30808, 36.73004], [-1.30812, 36.72921], [-1.30836, 36.72846], [-1.30989, 36.72648], [-1.31081, 36.72476], [-1.31285, 36.72256], [-1.31597, 36.71871], [-1.32001, 36.71413], [-1.32217, 36.70728], [-1.32315, 36.70793]]}, "Nairobi CBD|Hazina": {"distance_km": 6.5, "duration_min": 10.5, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29266, 36.82097], [-1.29292, 36.82075], [-1.29319, 36.82078], [-1.29729, 36.82341], [-1.30106, 36.82473], [-1.31222, 36.82997], [-1.31433, 36.83123], [-1.31551, 36.83227], [-1.31745, 36.83496], [-1.31916, 36.83784], [-1.31906, 36.83817], [-1.31832, 36.83852], [-1.31839, 36.83922], [-1.31884, 36.84023], [-1.32013, 36.8408], [-1.31932, 36.84323], [-1.31864, 36.84414], [-1.31791, 36.84716], [-1.31685, 36.8482], [-1.31618, 36.84841], [-1.31493, 36.84843], [-1.31491, 36.84869], [-1.31454, 36.849]]}, "Nairobi CBD|Highridge": {"distance_km": 6.1, "duration_min": 7.7, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28904, 36.82739], [-1.28482, 36.82517], [-1.28006, 36.81919], [-1.28001, 36.81865], [-1.28192, 36.8151], [-1.28188, 36.81482], [-1.27931, 36.81394], [-1.27658, 36.81336], [-1.27496, 36.81241], [-1.2741, 36.81153], [-1.27298, 36.80942], [-1.27234, 36.80864], [-1.26514, 36.80231], [-1.26475, 36.80174], [-1.26412, 36.80154], [-1.26438, 36.80215], [-1.26391, 36.80272], [-1.26157, 36.80329], [-1.25555, 36.80726], [-1.25549, 36.80671]]}, "Nairobi CBD|Highrise": {"distance_km": 4.1, "duration_min": 7.2, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29266, 36.82097], [-1.29303, 36.82075], [-1.29828, 36.82375], [-1.30114, 36.82485], [-1.30457, 36.82646], [-1.30482, 36.82672], [-1.30504, 36.82671], [-1.30547, 36.82552], [-1.30592, 36.82251], [-1.30641, 36.82073], [-1.30675, 36.82007], [-1.30728, 36.81973], [-1.30694, 36.81925], [-1.30678, 36.81847], [-1.30793, 36.8185], [-1.30826, 36.81768], [-1.30914, 36.81728]]}, "Nairobi CBD|Huruma": {"distance_km": 7.5, "duration_min": 10.3, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28747, 36.83077], [-1.28683, 36.83152], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28242, 36.83328], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27097, 36.83651], [-1.27025, 36.83657], [-1.26895, 36.84191], [-1.26728, 36.84374], [-1.26599, 36.85005], [-1.26584, 36.8586], [-1.26445, 36.85987], [-1.26401, 36.86056], [-1.26208, 36.86729], [-1.26103, 36.86696], [-1.26036, 36.86918], [-1.25923, 36.86882], [-1.25868, 36.87056], [-1.25827, 36.87131], [-1.25866, 36.87154]]}, "Nairobi CBD|JKIA": {"distance_km": 16.0, "duration_min": 21.0, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29266, 36.82097], [-1.29292, 36.82075], [-1.29319, 36.82078], [-1.29729, 36.82341], [-1.30059, 36.82453], [-1.3023, 36.82529], [-1.31325, 36.83044], [-1.3151, 36.83163], [-1.31632, 36.83295], [-1.31801, 36.83567], [-1.32995, 36.85595], [-1.33052, 36.85703], [-1.33105, 36.85866], [-1.33124, 36.86029], [-1.33116, 36.86168], [-1.32849, 36.88182], [-1.32856, 36.8831], [-1.32889, 36.88474], [-1.33073, 36.88779], [-1.33088, 36.88882], [-1.33048, 36.8897], [-1.32849, 36.89248], [-1.32402, 36.89957], [-1.31892, 36.90806], [-1.31855, 36.9091], [-1.31841, 36.91021], [-1.31879, 36.9137], [-1.31878, 36.91503], [-1.3182, 36.91746], [-1.31704, 36.91951], [-1.31545, 36.92152], [-1.31426, 36.92242], [-1.31262, 36.92328], [-1.31273, 36.92357], [-1.31334, 36.92371], [-1.31394, 36.9241], [-1.31358, 36.92514], [-1.31366, 36.9255], [-1.31313, 36.92621], [-1.3142, 36.92696]]}, "Nairobi CBD|Jacaranda": {"distance_km": 10.6, "duration_min": 16.3, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28548, 36.83223], [-1.28543, 36.83363], [-1.28554, 36.83393], [-1.28617, 36.8342], [-1.28766, 36.83785], [-1.28946, 36.84108], [-1.28999, 36.84138], [-1.29153, 36.84119], [-1.29194, 36.84159], [-1.29408, 36.85125], [-1.29409, 36.85212], [-1.29449, 36.85294], [-1.29482, 36.85443], [-1.29781, 36.86966], [-1.29608, 36.8822], [-1.2961, 36.88297], [-1.29644, 36.88405], [-1.29639, 36.8845], [-1.29496, 36.88689], [-1.29445, 36.88729], [-1.29448, 36.88769], [-1.29425, 36.88821], [-1.28742, 36.8971], [-1.29194, 36.90049], [-1.29123, 36.90135], [-1.28982, 36.90198], [-1.28953, 36.90225], [-1.28765, 36.90461], [-1.28698, 36.90654], [-1.28677, 36.90665]]}, "Nairobi CBD|KNH": {"distance_km": 3.6, "duration_min": 6.1, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29292, 36.82047], [-1.2932, 36.81811], [-1.29381, 36.81558], [-1.2951, 36.81354], [-1.29534, 36.81218], [-1.29548, 36.80952], [-1.29638, 36.80847], [-1.29701, 36.80734], [-1.29751, 36.8051], [-1.30051, 36.80499], [-1.30052, 36.80531], [-1.29985, 36.80519]]}, "Nairobi CBD|KPA": {"distance_km": 14.6, "duration_min": 17.0, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29266, 36.82097], [-1.29292, 36.82075], [-1.29319, 36.82078], [-1.29729, 36.82341], [-1.30106, 36.82473], [-1.31325, 36.83044], [-1.31467, 36.83129], [-1.31609, 36.83264], [-1.32121, 36.84114], [-1.32649, 36.85053], [-1.32683, 36.85136], [-1.32743, 36.8521], [-1.33002, 36.85647], [-1.33074, 36.85804], [-1.33107, 36.85969], [-1.33108, 36.86107], [-1.32991, 36.87026], [-1.33025, 36.87027], [-1.33084, 36.86589], [-1.33098, 36.86566], [-1.33125, 36.86567], [-1.33006, 36.87481], [-1.33083, 36.8758], [-1.33535, 36.87561], [-1.33872, 36.87199], [-1.33985, 36.86981], [-1.33994, 36.86852], [-1.33953, 36.86747], [-1.32824, 36.85016], [-1.32765, 36.84855]]}, "Nairobi CBD|Kaberia": {"distance_km": 15.8, "duration_min": 15.3, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28904, 36.82739], [-1.28482, 36.82517], [-1.28006, 36.81919], [-1.28001, 36.81865], [-1.28192, 36.8151], [-1.28188, 36.81482], [-1.27931, 36.81394], [-1.27658, 36.81336], [-1.27496, 36.81241], [-1.2741, 36.81153], [-1.27298, 36.80942], [-1.27234, 36.80864], [-1.26514, 36.80231], [-1.26475, 36.80174], [-1.26399, 36.80147], [-1.26278, 36.80048], [-1.26221, 36.79986], [-1.2617, 36.79888], [-1.26127, 36.79692], [-1.26105, 36.79326], [-1.26001, 36.7892], [-1.25889, 36.779], [-1.25925, 36.77619], [-1.26083, 36.76855], [-1.2611, 36.76784], [-1.26262, 36.76541], [-1.26292, 36.76467], [-1.26362, 36.76117], [-1.2642, 36.75425], [-1.26468, 36.7374], [-1.26466, 36.73563], [-1.26399, 36.73029], [-1.26314, 36.72799], [-1.26094, 36.72414], [-1.26036, 36.72214], [-1.26023, 36.72075], [-1.26034, 36.7208], [-1.26091, 36.72177], [-1.25905, 36.7225], [-1.25653, 36.72396], [-1.25394, 36.71996], [-1.25, 36.71994]]}, "Nairobi CBD|Kahawa West": {"distance_km": 16.2, "duration_min": 15.8, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28219, 36.83323], [-1.28161, 36.83293], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27075, 36.83656], [-1.27011, 36.83656], [-1.26951, 36.83631], [-1.26711, 36.83453], [-1.26658, 36.83457], [-1.26567, 36.83527], [-1.26433, 36.83686], [-1.26243, 36.84002], [-1.26079, 36.84209], [-1.25882, 36.84603], [-1.25808, 36.8481], [-1.2579, 36.85261], [-1.25726, 36.85404], [-1.25547, 36.85637], [-1.25349, 36.85849], [-1.24342, 36.86814], [-1.23729, 36.87098], [-1.23541, 36.87232], [-1.22969, 36.8793], [-1.22429, 36.88668], [-1.22306, 36.88806], [-1.21963, 36.89116], [-1.21874, 36.89096], [-1.21799, 36.89106], [-1.21786, 36.89125], [-1.21503, 36.89259], [-1.2063, 36.89457], [-1.20356, 36.89648], [-1.20222, 36.89723], [-1.19981, 36.90052], [-1.19882, 36.90138], [-1.19778, 36.90196], [-1.19663, 36.90199], [-1.19667, 36.90249], [-1.19547, 36.90297], [-1.19537, 36.90287], [-1.19453, 36.90397], [-1.19323, 36.90504], [-1.19217, 36.90559], [-1.19074, 36.90605], [-1.18629, 36.90674]]}, "Nairobi CBD|Kangemi": {"distance_km": 11.2, "duration_min": 11.4, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28904, 36.82739], [-1.28482, 36.82517], [-1.28006, 36.81919], [-1.28001, 36.81865], [-1.28192, 36.8151], [-1.28188, 36.81482], [-1.27931, 36.81394], [-1.27658, 36.81336], [-1.27496, 36.81241], [-1.2741, 36.81153], [-1.27298, 36.80942], [-1.27234, 36.80864], [-1.26514, 36.80231], [-1.26475, 36.80174], [-1.26399, 36.80147], [-1.26278, 36.80048], [-1.26199, 36.79952], [-1.26146, 36.79814], [-1.26108, 36.79516], [-1.26105, 36.79326], [-1.26012, 36.78985], [-1.25898, 36.78058], [-1.25889, 36.779], [-1.25905, 36.77728], [-1.2609, 36.76831], [-1.26262, 36.76541], [-1.26307, 36.76408], [-1.26362, 36.76117], [-1.26393, 36.75819], [-1.26433, 36.75187], [-1.26556, 36.75209], [-1.26556, 36.75164], [-1.26646, 36.75157], [-1.2669, 36.75227], [-1.2679, 36.75173], [-1.26849, 36.75198], [-1.26839, 36.75217]]}, "Nairobi CBD|Karen": {"distance_km": 15.8, "duration_min": 22.8, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29292, 36.82047], [-1.2932, 36.81811], [-1.29381, 36.81558], [-1.2951, 36.81354], [-1.29534, 36.81218], [-1.29548, 36.80952], [-1.29638, 36.80847], [-1.29701, 36.80734], [-1.29791, 36.80336], [-1.29828, 36.80291], [-1.29809, 36.80235], [-1.29933, 36.79544], [-1.30048, 36.77072], [-1.30045, 36.7689], [-1.30006, 36.76626], [-1.29977, 36.76556], [-1.29942, 36.76303], [-1.29903, 36.7618], [-1.29901, 36.76097], [-1.30125, 36.75547], [-1.30578, 36.74285], [-1.30693, 36.73765], [-1.30855, 36.73215], [-1.30854, 36.73165], [-1.30808, 36.73004], [-1.30821, 36.72883], [-1.30867, 36.72794], [-1.30989, 36.72648], [-1.31081, 36.72476], [-1.31285, 36.72256], [-1.31597, 36.71871], [-1.32001, 36.71413], [-1.32217, 36.70728], [-1.32329, 36.70421], [-1.32646, 36.70559], [-1.32785, 36.70598], [-1.3281, 36.70596], [-1.32822, 36.70495]]}, "Nairobi CBD|Kariobangi North": {"distance_km": 10.9, "duration_min": 11.9, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28219, 36.83323], [-1.28161, 36.83293], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27075, 36.83656], [-1.27011, 36.83656], [-1.26951, 36.83631], [-1.26711, 36.83453], [-1.26658, 36.83457], [-1.26567, 36.83527], [-1.26433, 36.83686], [-1.26243, 36.84002], [-1.26079, 36.84209], [-1.2584, 36.84692], [-1.25808, 36.8481], [-1.25794, 36.85238], [-1.25726, 36.85404], [-1.2546, 36.85738], [-1.24773, 36.86401], [-1.24704, 36.86448], [-1.24342, 36.86792], [-1.24146, 36.86882], [-1.24151, 36.86933], [-1.24191, 36.8695], [-1.24501, 36.86788], [-1.24556, 36.8679], [-1.24599, 36.86834], [-1.24678, 36.86943], [-1.24722, 36.8707], [-1.24719, 36.87465], [-1.24767, 36.87638], [-1.24835, 36.87725], [-1.24993, 36.87848], [-1.25136, 36.8789], [-1.25237, 36.87898], [-1.25222, 36.88043], [-1.25318, 36.88047], [-1.2532, 36.8815]]}, "Nairobi CBD|Kariobangi South": {"distance_km": 8.8, "duration_min": 10.8, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28747, 36.83077], [-1.28683, 36.83152], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28242, 36.83328], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27097, 36.83651], [-1.27025, 36.83657], [-1.26895, 36.84191], [-1.26728, 36.84374], [-1.26599, 36.85005], [-1.26584, 36.8586], [-1.26445, 36.85987], [-1.26399, 36.86061], [-1.26142, 36.86966], [-1.26255, 36.87746], [-1.26253, 36.87839], [-1.26198, 36.87891], [-1.26194, 36.87921], [-1.26214, 36.87938], [-1.26267, 36.87927], [-1.2637, 36.87942], [-1.26677, 36.88014], [-1.26674, 36.88026], [-1.2665, 36.88021], [-1.26611, 36.88175]]}, "Nairobi CBD|Kawangware": {"distance_km": 11.7, "duration_min": 13.5, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28904, 36.82739], [-1.28458, 36.82495], [-1.28006, 36.81919], [-1.28001, 36.81865], [-1.28192, 36.8151], [-1.28192, 36.81487], [-1.27981, 36.81408], [-1.27658, 36.81336], [-1.27485, 36.81232], [-1.2741, 36.81153], [-1.27298, 36.80942], [-1.27234, 36.80864], [-1.26514, 36.80231], [-1.26475, 36.80174], [-1.26399, 36.80147], [-1.26248, 36.80018], [-1.2617, 36.79888], [-1.26132, 36.79739], [-1.26105, 36.79326], [-1.26001, 36.7892], [-1.2589, 36.77953], [-1.25905, 36.77728], [-1.2609, 36.76831], [-1.26262, 36.76541], [-1.26307, 36.76408], [-1.26318, 36.76407], [-1.26318, 36.76438], [-1.26752, 36.7623], [-1.26722, 36.76135], [-1.26953, 36.76106], [-1.27037, 36.7611], [-1.27093, 36.76074], [-1.27139, 36.76067], [-1.2739, 36.76058], [-1.27479, 36.75823], [-1.27713, 36.75387], [-1.2781, 36.75155]]}, "Nairobi CBD|Kayole": {"distance_km": 14.7, "duration_min": 17.9, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28747, 36.83077], [-1.28683, 36.83152], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28242, 36.83328], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27097, 36.83651], [-1.27025, 36.83657], [-1.26895, 36.84191], [-1.26728, 36.84374], [-1.26596, 36.85025], [-1.26584, 36.8586], [-1.26445, 36.85987], [-1.26399, 36.86061], [-1.26144, 36.86953], [-1.26256, 36.87764], [-1.26253, 36.87839], [-1.26192, 36.87907], [-1.26232, 36.87969], [-1.26171, 36.88501], [-1.26098, 36.88824], [-1.26023, 36.8905], [-1.25824, 36.89323], [-1.25667, 36.89782], [-1.25641, 36.89961], [-1.25695, 36.9013], [-1.25759, 36.90252], [-1.25762, 36.90295], [-1.25664, 36.90569], [-1.25675, 36.90789], [-1.25615, 36.90875], [-1.25457, 36.91031], [-1.25442, 36.91145], [-1.25755, 36.9119], [-1.25955, 36.91237], [-1.2607, 36.90987], [-1.26145, 36.90866], [-1.26166, 36.90874], [-1.26289, 36.90985], [-1.26187, 36.91119], [-1.26198, 36.91239], [-1.26395, 36.91434], [-1.26436, 36.91508], [-1.26489, 36.91662], [-1.26639, 36.91607], [-1.26675, 36.91652], [-1.26709, 36.91732], [-1.26627, 36.91767], [-1.26653, 36.91872], [-1.26692, 36.91929]]}, "Nairobi CBD|Kiambu": {"distance_km": 16.4, "duration_min": 13.9, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28575, 36.83213], [-1.28367, 36.83317], [-1.28259, 36.8333], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27075, 36.83656], [-1.27011, 36.83656], [-1.26951, 36.83631], [-1.26717, 36.83456], [-1.26672, 36.83451], [-1.26567, 36.83527], [-1.2649, 36.83612], [-1.26243, 36.84002], [-1.26086, 36.84178], [-1.25606, 36.84341], [-1.25089, 36.84628], [-1.24881, 36.84719], [-1.24803, 36.84702], [-1.24652, 36.84582], [-1.24371, 36.84457], [-1.23244, 36.84327], [-1.23179, 36.8429], [-1.23044, 36.84158], [-1.22948, 36.84089], [-1.22415, 36.83825], [-1.22154, 36.83587], [-1.22105, 36.83561], [-1.22041, 36.83548], [-1.21812, 36.83584], [-1.21725, 36.83578], [-1.21084, 36.83319], [-1.20871, 36.83297], [-1.20721, 36.83211], [-1.20662, 36.83193], [-1.20581, 36.83201], [-1.19875, 36.83577], [-1.19792, 36.83633], [-1.19451, 36.83934], [-1.19335, 36.83991], [-1.19242, 36.83996], [-1.18148, 36.83816], [-1.17788, 36.83708], [-1.17672, 36.83642], [-1.17498, 36.8343], [-1.17122, 36.82839], [-1.17054, 36.82772], [-1.16666, 36.825], [-1.16672, 36.82515]]}, "Nairobi CBD|Kibera": {"distance_km": 6.7, "duration_min": 10.7, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29292, 36.82047], [-1.2932, 36.81811], [-1.29381, 36.81558], [-1.2951, 36.81354], [-1.29534, 36.81218], [-1.29548, 36.80952], [-1.2965, 36.80828], [-1.29707, 36.80718], [-1.29791, 36.80336], [-1.29828, 36.80291], [-1.29809, 36.80235], [-1.29927, 36.79592], [-1.2995, 36.79268], [-1.30114, 36.79281], [-1.30132, 36.79069], [-1.30346, 36.78825], [-1.30499, 36.78856], [-1.30911, 36.791], [-1.31133, 36.79158], [-1.31192, 36.79153], [-1.31076, 36.78993], [-1.31116, 36.78896]]}, "Nairobi CBD|Kikuyu": {"distance_km": 22.2, "duration_min": 19.5, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28904, 36.82739], [-1.28482, 36.82517], [-1.28006, 36.81919], [-1.28001, 36.81865], [-1.28192, 36.8151], [-1.28188, 36.81482], [-1.27931, 36.81394], [-1.27658, 36.81336], [-1.27496, 36.81241], [-1.2741, 36.81153], [-1.27298, 36.80942], [-1.27234, 36.80864], [-1.26514, 36.80231], [-1.26475, 36.80174], [-1.26399, 36.80147], [-1.26278, 36.80048], [-1.26199, 36.79952], [-1.26146, 36.79814], [-1.26108, 36.79516], [-1.26105, 36.79326], [-1.26001, 36.7892], [-1.25889, 36.779], [-1.25925, 36.77619], [-1.26083, 36.76855], [-1.2611, 36.76784], [-1.26262, 36.76541], [-1.26292, 36.76467], [-1.26362, 36.76117], [-1.2642, 36.75425], [-1.26468, 36.7374], [-1.26466, 36.73563], [-1.26399, 36.73029], [-1.26333, 36.72837], [-1.26134, 36.725], [-1.26049, 36.72273], [-1.26023, 36.72075], [-1.26027, 36.71929], [-1.26097, 36.71584], [-1.26107, 36.7146], [-1.25963, 36.70628], [-1.25915, 36.70457], [-1.25442, 36.69138], [-1.24666, 36.68037], [-1.24196, 36.67632], [-1.23627, 36.67318], [-1.23461, 36.67114], [-1.23456, 36.6705], [-1.23535, 36.6696], [-1.23578, 36.66793], [-1.23612, 36.66746], [-1.23776, 36.66653], [-1.23933, 36.66624], [-1.23924, 36.6656], [-1.24228, 36.66519], [-1.24353, 36.66437], [-1.24372, 36.66474]]}, "Nairobi CBD|Kiserian": {"distance_km": 27.6, "duration_min": 41.3, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29266, 36.82097], [-1.29303, 36.82075], [-1.29828, 36.82375], [-1.30114, 36.82485], [-1.30457, 36.82646], [-1.30482, 36.82672], [-1.30504, 36.82671], [-1.30547, 36.82552], [-1.30601, 36.82212], [-1.30675, 36.82007], [-1.30722, 36.81983], [-1.30746, 36.8195], [-1.30916, 36.8187], [-1.31251, 36.81608], [-1.31544, 36.81459], [-1.32164, 36.80846], [-1.32228, 36.80735], [-1.32326, 36.80182], [-1.32414, 36.79748], [-1.32442, 36.79675], [-1.33584, 36.77661], [-1.34185, 36.76883], [-1.34273, 36.7669], [-1.34899, 36.7646], [-1.35135, 36.76307], [-1.35268, 36.76277], [-1.35451, 36.76192], [-1.35503, 36.76186], [-1.35782, 36.76251], [-1.36078, 36.76285], [-1.36426, 36.76584], [-1.36752, 36.76762], [-1.36983, 36.76749], [-1.37305, 36.76902], [-1.37454, 36.76951], [-1.38627, 36.77112], [-1.38678, 36.771], [-1.3874, 36.77058], [-1.38877, 36.76915], [-1.38937, 36.76796], [-1.39096, 36.76653], [-1.39524, 36.76367], [-1.39705, 36.75983], [-1.39735, 36.75852], [-1.39544, 36.7317], [-1.39616, 36.72846], [-1.39699, 36.72715], [-1.4006, 36.72346], [-1.40279, 36.71937], [-1.40845, 36.71343], [-1.40975, 36.71246], [-1.41075, 36.71204], [-1.41593, 36.71073], [-1.41831, 36.7083], [-1.41999, 36.70477], [-1.42242, 36.69879], [-1.42291, 36.69643], [-1.42808, 36.69018], [-1.42957, 36.6888], [-1.43068, 36.68705]]}, "Nairobi CBD|Kitengela": {"distance_km": 30.6, "duration_min": 29.2, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29266, 36.82097], [-1.29292, 36.82075], [-1.29319, 36.82078], [-1.29729, 36.82341], [-1.30106, 36.82473], [-1.31364, 36.83065], [-1.3151, 36.83163], [-1.31671, 36.83349], [-1.32995, 36.85595], [-1.33052, 36.85703], [-1.33105, 36.85866], [-1.33124, 36.86029], [-1.33116, 36.86168], [-1.32851, 36.88129], [-1.32856, 36.8831], [-1.32889, 36.88474], [-1.33053, 36.88719], [-1.34408, 36.9025], [-1.34528, 36.9035], [-1.34771, 36.90479], [-1.35907, 36.90794], [-1.3607, 36.90856], [-1.36202, 36.90927], [-1.36414, 36.91106], [-1.3774, 36.92614], [-1.38037, 36.92934], [-1.3829, 36.93162], [-1.38886, 36.93641], [-1.39479, 36.94039], [-1.39949, 36.94318], [-1.40127, 36.94396], [-1.41951, 36.95377], [-1.42325, 36.9562], [-1.42568, 36.95815], [-1.42731, 36.95971], [-1.43041, 36.96328], [-1.43173, 36.96552], [-1.4317, 36.96596], [-1.43121, 36.96704], [-1.43133, 36.96747], [-1.43163, 36.96777], [-1.43228, 36.96793], [-1.43403, 36.96771], [-1.43441, 36.96752], [-1.435, 36.96681], [-1.43552, 36.96666], [-1.43666, 36.96672], [-1.43845, 36.96719], [-1.44017, 36.96832], [-1.44099, 36.9686], [-1.44528, 36.96821], [-1.44834, 36.96836], [-1.45142, 36.96814], [-1.45282, 36.96784], [-1.45486, 36.96713], [-1.46305, 36.96303], [-1.46605, 36.96175], [-1.47456, 36.95904]]}, "Nairobi CBD|Komarock": {"distance_km": 14.0, "duration_min": 16.3, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28747, 36.83077], [-1.28683, 36.83152], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28242, 36.83328], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27097, 36.83651], [-1.27025, 36.83657], [-1.26895, 36.84191], [-1.26728, 36.84374], [-1.26599, 36.85005], [-1.26584, 36.8586], [-1.26445, 36.85987], [-1.26399, 36.86061], [-1.26144, 36.86953], [-1.26254, 36.87728], [-1.26253, 36.87839], [-1.26194, 36.87898], [-1.26204, 36.87933], [-1.26267, 36.87927], [-1.26404, 36.87949], [-1.26879, 36.88064], [-1.26934, 36.88108], [-1.2698, 36.88089], [-1.27435, 36.88213], [-1.27779, 36.8826], [-1.27825, 36.88298], [-1.27838, 36.88367], [-1.27819, 36.88417], [-1.27653, 36.88586], [-1.27595, 36.88696], [-1.27542, 36.89054], [-1.27486, 36.89292], [-1.27406, 36.89506], [-1.27285, 36.89736], [-1.27121, 36.89963], [-1.26963, 36.90132], [-1.26829, 36.90248], [-1.26547, 36.9045], [-1.26687, 36.90624], [-1.26835, 36.90563], [-1.26913, 36.90765], [-1.27088, 36.90908], [-1.27183, 36.90774], [-1.27212, 36.90752], [-1.2724, 36.90779]]}, "Nairobi CBD|Langata": {"distance_km": 9.0, "duration_min": 13.4, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29266, 36.82097], [-1.29303, 36.82075], [-1.29841, 36.82381], [-1.30114, 36.82485], [-1.30457, 36.82646], [-1.30482, 36.82672], [-1.30512, 36.82664], [-1.30551, 36.82534], [-1.30601, 36.82212], [-1.30675, 36.82007], [-1.30722, 36.81983], [-1.30746, 36.8195], [-1.30916, 36.8187], [-1.31251, 36.81608], [-1.31544, 36.81459], [-1.32196, 36.80805], [-1.32253, 36.80623], [-1.32326, 36.80182], [-1.32425, 36.79711], [-1.33256, 36.78226], [-1.33299, 36.78171], [-1.33284, 36.78151], [-1.33275, 36.78166], [-1.3329, 36.78176]]}, "Nairobi CBD|Lavington": {"distance_km": 8.0, "duration_min": 11.4, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28904, 36.82739], [-1.28482, 36.82517], [-1.28006, 36.81919], [-1.28001, 36.81865], [-1.28192, 36.8151], [-1.28192, 36.81487], [-1.27981, 36.81408], [-1.27658, 36.81336], [-1.2754, 36.81274], [-1.2741, 36.81153], [-1.27282, 36.80921], [-1.27096, 36.80735], [-1.27126, 36.80622], [-1.27185, 36.80529], [-1.27252, 36.80344], [-1.2721, 36.80218], [-1.27012, 36.79899], [-1.26987, 36.79495], [-1.26956, 36.79186], [-1.26928, 36.79089], [-1.26914, 36.78868], [-1.26824, 36.78505], [-1.26755, 36.78319], [-1.26753, 36.78258], [-1.2685, 36.7806], [-1.26984, 36.78044], [-1.27052, 36.77949], [-1.27179, 36.77878], [-1.27262, 36.77901], [-1.275, 36.77775], [-1.27475, 36.77607], [-1.27408, 36.77612]]}, "Nairobi CBD|Limuru": {"distance_km": 32.1, "duration_min": 26.6, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28904, 36.82739], [-1.28482, 36.82517], [-1.28006, 36.81919], [-1.28001, 36.81865], [-1.28192, 36.8151], [-1.28188, 36.81482], [-1.27931, 36.81394], [-1.27658, 36.81336], [-1.27496, 36.81241], [-1.2741, 36.81153], [-1.27298, 36.80942], [-1.27234, 36.80864], [-1.26514, 36.80231], [-1.26475, 36.80174], [-1.26399, 36.80147], [-1.26278, 36.80048], [-1.26199, 36.79952], [-1.26146, 36.79814], [-1.26108, 36.79516], [-1.26105, 36.79326], [-1.26001, 36.7892], [-1.25889, 36.779], [-1.25925, 36.77619], [-1.26083, 36.76855], [-1.2611, 36.76784], [-1.26262, 36.76541], [-1.26292, 36.76467], [-1.26362, 36.76117], [-1.2642, 36.75425], [-1.26468, 36.7374], [-1.2645, 36.73422], [-1.26399, 36.73029], [-1.26371, 36.72934], [-1.26314, 36.72799], [-1.26104, 36.72438], [-1.26036, 36.72214], [-1.26027, 36.71929], [-1.26097, 36.71584], [-1.26107, 36.7146], [-1.25963, 36.70628], [-1.25915, 36.70457], [-1.25442, 36.69138], [-1.2472, 36.681], [-1.24586, 36.67961], [-1.2422, 36.67649], [-1.2361, 36.67303], [-1.23306, 36.66908], [-1.23222, 36.66841], [-1.22997, 36.66727], [-1.22938, 36.66663], [-1.22835, 36.665], [-1.22735, 36.66422], [-1.22601, 36.66386], [-1.21624, 36.6625], [-1.21539, 36.66227], [-1.21452, 36.66174], [-1.2128, 36.65979], [-1.21178, 36.65902], [-1.19594, 36.65255], [-1.19026, 36.64898], [-1.17728, 36.6427], [-1.17618, 36.64231], [-1.1437, 36.63702], [-1.14346, 36.63683], [-1.14472, 36.637], [-1.14464, 36.63746], [-1.14588, 36.63756]]}, "Nairobi CBD|Lucky Summer": {"distance_km": 12.8, "duration_min": 15.1, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28219, 36.83323], [-1.28161, 36.83293], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27075, 36.83656], [-1.27011, 36.83656], [-1.26951, 36.83631], [-1.26711, 36.83453], [-1.26658, 36.83457], [-1.26567, 36.83527], [-1.26433, 36.83686], [-1.26243, 36.84002], [-1.26079, 36.84209], [-1.2584, 36.84692], [-1.25808, 36.8481], [-1.25794, 36.85238], [-1.25726, 36.85404], [-1.2546, 36.85738], [-1.24773, 36.86401], [-1.24704, 36.86448], [-1.24342, 36.86792], [-1.24146, 36.86882], [-1.24151, 36.86933], [-1.24191, 36.8695], [-1.24501, 36.86788], [-1.24556, 36.8679], [-1.2458, 36.86814], [-1.24665, 36.86918], [-1.24709, 36.8703], [-1.24717, 36.87456], [-1.2468, 36.875], [-1.24477, 36.8756], [-1.24392, 36.8757], [-1.24366, 36.87615], [-1.24443, 36.88977], [-1.24418, 36.89031], [-1.24344, 36.89093], [-1.2429, 36.89081], [-1.24247, 36.89264], [-1.24064, 36.89481], [-1.23961, 36.89799]]}, "Nairobi CBD|Lunga Lunga": {"distance_km": 5.8, "duration_min": 8.4, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28548, 36.83223], [-1.28543, 36.83363], [-1.28554, 36.83393], [-1.28617, 36.8342], [-1.28766, 36.83785], [-1.28946, 36.84108], [-1.28999, 36.84138], [-1.29153, 36.84119], [-1.29194, 36.84159], [-1.29408, 36.85125], [-1.29409, 36.85212], [-1.29455, 36.85319], [-1.29508, 36.85601], [-1.29528, 36.85595], [-1.2955, 36.85551], [-1.29769, 36.8552], [-1.30906, 36.85671], [-1.30944, 36.85678], [-1.30954, 36.85699]]}, "Nairobi CBD|Maringo": {"distance_km": 5.8, "duration_min": 9.4, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28548, 36.83223], [-1.28543, 36.83363], [-1.28554, 36.83393], [-1.28617, 36.8342], [-1.28766, 36.83785], [-1.28946, 36.84108], [-1.28999, 36.84138], [-1.29153, 36.84119], [-1.29179, 36.84132], [-1.29198, 36.84171], [-1.29408, 36.85125], [-1.29409, 36.85212], [-1.29455, 36.85319], [-1.29636, 36.86203], [-1.2933, 36.86257], [-1.29343, 36.86461], [-1.29392, 36.8646], [-1.29407, 36.86706], [-1.29476, 36.86702], [-1.29471, 36.86653]]}, "Nairobi CBD|Mathare North": {"distance_km": 7.8, "duration_min": 11.4, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28747, 36.83077], [-1.28683, 36.83152], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28242, 36.83328], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27097, 36.83651], [-1.27025, 36.83657], [-1.26895, 36.84191], [-1.26728, 36.84374], [-1.26599, 36.85005], [-1.26584, 36.8586], [-1.26445, 36.85987], [-1.26401, 36.86056], [-1.26244, 36.86603], [-1.25798, 36.86386], [-1.25724, 36.86376], [-1.25665, 36.86415], [-1.25562, 36.86591], [-1.2551, 36.86651], [-1.25307, 36.86696], [-1.25296, 36.86746], [-1.25339, 36.86754], [-1.25335, 36.86776]]}, "Nairobi CBD|Mwiki": {"distance_km": 17.5, "duration_min": 19.5, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28219, 36.83323], [-1.28161, 36.83293], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27075, 36.83656], [-1.27011, 36.83656], [-1.26951, 36.83631], [-1.26711, 36.83453], [-1.26658, 36.83457], [-1.26567, 36.83527], [-1.26433, 36.83686], [-1.26243, 36.84002], [-1.26079, 36.84209], [-1.25882, 36.84603], [-1.25808, 36.8481], [-1.2579, 36.85261], [-1.25726, 36.85404], [-1.25547, 36.85637], [-1.25349, 36.85849], [-1.24342, 36.86814], [-1.23729, 36.87098], [-1.23541, 36.87232], [-1.22969, 36.8793], [-1.22429, 36.88668], [-1.22306, 36.88806], [-1.2193, 36.89133], [-1.21934, 36.89166], [-1.22004, 36.89195], [-1.22056, 36.89248], [-1.2207, 36.89313], [-1.21775, 36.8969], [-1.21745, 36.8975], [-1.21886, 36.903], [-1.22087, 36.90529], [-1.22395, 36.90825], [-1.22307, 36.91195], [-1.22954, 36.92085], [-1.23424, 36.93118], [-1.23214, 36.93212], [-1.23267, 36.9333]]}, "Nairobi CBD|Ndenderu": {"distance_km": 21.8, "duration_min": 21.3, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28575, 36.83213], [-1.28367, 36.83317], [-1.28259, 36.8333], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27075, 36.83656], [-1.27011, 36.83656], [-1.26951, 36.83631], [-1.26717, 36.83456], [-1.26672, 36.83451], [-1.26567, 36.83527], [-1.2649, 36.83612], [-1.26243, 36.84002], [-1.26086, 36.84178], [-1.25606, 36.84341], [-1.24903, 36.84717], [-1.24803, 36.84702], [-1.24652, 36.84582], [-1.24371, 36.84457], [-1.23244, 36.84327], [-1.23179, 36.8429], [-1.23044, 36.84158], [-1.22948, 36.84089], [-1.22415, 36.83825], [-1.22118, 36.83567], [-1.22041, 36.83548], [-1.21758, 36.83583], [-1.21573, 36.83524], [-1.2158, 36.83219], [-1.21629, 36.82856], [-1.21654, 36.82498], [-1.21625, 36.81925], [-1.21517, 36.81333], [-1.21388, 36.80906], [-1.21285, 36.80648], [-1.20789, 36.79681], [-1.20783, 36.79631], [-1.20759, 36.79607], [-1.20721, 36.79504], [-1.20644, 36.79148], [-1.20473, 36.7877], [-1.20449, 36.78661], [-1.20465, 36.78652], [-1.20474, 36.78678], [-1.20507, 36.78667], [-1.2058, 36.78603], [-1.20584, 36.78555], [-1.20718, 36.78596], [-1.20684, 36.78492], [-1.20657, 36.78226], [-1.19978, 36.75819], [-1.19907, 36.75666], [-1.19381, 36.74941], [-1.19283, 36.74721], [-1.19243, 36.74397], [-1.19386, 36.74342], [-1.19453, 36.74267], [-1.19524, 36.74391], [-1.19403, 36.74446], [-1.19425, 36.74498], [-1.19399, 36.74512]]}, "Nairobi CBD|Ndumberi": {"distance_km": 19.3, "duration_min": 15.8, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28575, 36.83213], [-1.28367, 36.83317], [-1.28259, 36.8333], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27075, 36.83656], [-1.27011, 36.83656], [-1.26951, 36.83631], [-1.26717, 36.83456], [-1.26672, 36.83451], [-1.26567, 36.83527], [-1.2649, 36.83612], [-1.26243, 36.84002], [-1.26086, 36.84178], [-1.25606, 36.84341], [-1.24903, 36.84717], [-1.24803, 36.84702], [-1.24652, 36.84582], [-1.24371, 36.84457], [-1.23244, 36.84327], [-1.23179, 36.8429], [-1.23044, 36.84158], [-1.22948, 36.84089], [-1.22415, 36.83825], [-1.22154, 36.83587], [-1.22105, 36.83561], [-1.22041, 36.83548], [-1.21812, 36.83584], [-1.21725, 36.83578], [-1.21084, 36.83319], [-1.20871, 36.83297], [-1.20721, 36.83211], [-1.20662, 36.83193], [-1.20581, 36.83201], [-1.19856, 36.83589], [-1.19413, 36.83963], [-1.19335, 36.83991], [-1.19242, 36.83996], [-1.18148, 36.83816], [-1.17788, 36.83708], [-1.17672, 36.83642], [-1.17498, 36.8343], [-1.17132, 36.82853], [-1.1708, 36.82794], [-1.16016, 36.82059], [-1.15895, 36.8196], [-1.15415, 36.8117], [-1.15195, 36.80612], [-1.15114, 36.80487]]}, "Nairobi CBD|Ngong": {"distance_km": 23.9, "duration_min": 35.2, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29292, 36.82047], [-1.2932, 36.81811], [-1.29381, 36.81558], [-1.2951, 36.81354], [-1.29534, 36.81218], [-1.29548, 36.80952], [-1.29638, 36.80847], [-1.29701, 36.80734], [-1.29791, 36.80336], [-1.29828, 36.80291], [-1.29809, 36.80235], [-1.29933, 36.79544], [-1.30048, 36.77072], [-1.30045, 36.7689], [-1.30006, 36.76626], [-1.29977, 36.76556], [-1.29942, 36.76303], [-1.29903, 36.7618], [-1.29901, 36.76097], [-1.30125, 36.75547], [-1.30578, 36.74285], [-1.30693, 36.73765], [-1.30855, 36.73215], [-1.30854, 36.73165], [-1.30808, 36.73004], [-1.30827, 36.72867], [-1.30867, 36.72794], [-1.30989, 36.72648], [-1.31081, 36.72476], [-1.31285, 36.72256], [-1.32014, 36.7139], [-1.32217, 36.70728], [-1.32465, 36.70082], [-1.3257, 36.69496], [-1.32561, 36.69302], [-1.32596, 36.69257], [-1.32738, 36.69181], [-1.32781, 36.69015], [-1.32901, 36.68892], [-1.32941, 36.68819], [-1.32961, 36.68616], [-1.32932, 36.68567], [-1.32824, 36.6848], [-1.32803, 36.68436], [-1.32804, 36.68391], [-1.33099, 36.67706], [-1.33175, 36.67573], [-1.33274, 36.67458], [-1.33502, 36.6726], [-1.33967, 36.66748], [-1.34049, 36.66698], [-1.34416, 36.666], [-1.34504, 36.66557], [-1.34924, 36.66061], [-1.35041, 36.65958], [-1.35204, 36.65856], [-1.35414, 36.65768], [-1.36184, 36.65562], [-1.36233, 36.65536], [-1.36163, 36.65431], [-1.36181, 36.6536], [-1.36249, 36.65251], [-1.36334, 36.65201], [-1.3644, 36.65084], [-1.36491, 36.65064], [-1.36541, 36.65012], [-1.36593, 36.65064], [-1.36656, 36.64995]]}, "Nairobi CBD|Ngumba": {"distance_km": 11.0, "duration_min": 13.2, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28219, 36.83323], [-1.28161, 36.83293], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27075, 36.83656], [-1.27011, 36.83656], [-1.26951, 36.83631], [-1.26711, 36.83453], [-1.26658, 36.83457], [-1.26567, 36.83527], [-1.26433, 36.83686], [-1.26243, 36.84002], [-1.26079, 36.84209], [-1.25882, 36.84603], [-1.25808, 36.8481], [-1.2579, 36.85261], [-1.25726, 36.85404], [-1.25547, 36.85637], [-1.25349, 36.85849], [-1.24342, 36.86814], [-1.23842, 36.87049], [-1.23668, 36.87112], [-1.23565, 36.87186], [-1.23449, 36.87309], [-1.23404, 36.87312], [-1.23395, 36.87339], [-1.23419, 36.8734], [-1.23482, 36.87388], [-1.23545, 36.87385], [-1.23629, 36.8753], [-1.23605, 36.88045], [-1.23541, 36.88204], [-1.23493, 36.88252], [-1.23455, 36.88265], [-1.23375, 36.8845], [-1.23245, 36.88399], [-1.23232, 36.8843]]}, "Nairobi CBD|Ngumo": {"distance_km": 4.8, "duration_min": 8.4, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29292, 36.82047], [-1.2932, 36.81811], [-1.29381, 36.81558], [-1.2951, 36.81354], [-1.29534, 36.81218], [-1.29548, 36.80952], [-1.29638, 36.80847], [-1.29701, 36.80734], [-1.29801, 36.80334], [-1.29841, 36.80307], [-1.30008, 36.80312], [-1.30163, 36.80237], [-1.3031, 36.80266], [-1.30311, 36.802], [-1.30276, 36.80143], [-1.30366, 36.80114], [-1.30455, 36.8006], [-1.30584, 36.80046], [-1.30624, 36.80067], [-1.30788, 36.7995], [-1.30853, 36.79839]]}, "Nairobi CBD|Othaya": {"distance_km": 7.1, "duration_min": 10.4, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28904, 36.82739], [-1.28482, 36.82517], [-1.28347, 36.8236], [-1.28651, 36.81759], [-1.28675, 36.81747], [-1.28682, 36.81699], [-1.28935, 36.81181], [-1.2892, 36.81178], [-1.28912, 36.81201], [-1.2889, 36.81192], [-1.28841, 36.81139], [-1.2864, 36.80412], [-1.28738, 36.80329], [-1.28755, 36.80287], [-1.28665, 36.79884], [-1.28513, 36.79348], [-1.28496, 36.79042], [-1.28546, 36.78811], [-1.28503, 36.78797], [-1.28469, 36.78758], [-1.28348, 36.78564], [-1.28579, 36.78247], [-1.28416, 36.77918], [-1.28441, 36.77847], [-1.28442, 36.7778], [-1.28534, 36.77497]]}, "Nairobi CBD|Pipeline Jogoo": {"distance_km": 13.5, "duration_min": 17.9, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29266, 36.82097], [-1.29292, 36.82075], [-1.29319, 36.82078], [-1.29729, 36.82341], [-1.30059, 36.82453], [-1.3023, 36.82529], [-1.31325, 36.83044], [-1.3151, 36.83163], [-1.31671, 36.83349], [-1.32995, 36.85595], [-1.33074, 36.85759], [-1.33118, 36.85943], [-1.33116, 36.86168], [-1.32849, 36.88182], [-1.32856, 36.8831], [-1.32889, 36.88474], [-1.32954, 36.88573], [-1.33073, 36.88823], [-1.33077, 36.88887], [-1.33051, 36.88947], [-1.32841, 36.89237], [-1.32328, 36.88776], [-1.32206, 36.8886], [-1.32151, 36.88866], [-1.31915, 36.88792], [-1.31355, 36.88502], [-1.3129, 36.88583], [-1.31285, 36.88541]]}, "Nairobi CBD|Pipeline Mombasa": {"distance_km": 12.1, "duration_min": 13.0, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29266, 36.82097], [-1.29292, 36.82075], [-1.29319, 36.82078], [-1.29729, 36.82341], [-1.30106, 36.82473], [-1.31364, 36.83065], [-1.3151, 36.83163], [-1.31671, 36.83349], [-1.32995, 36.85595], [-1.33089, 36.85802], [-1.33122, 36.85993], [-1.33116, 36.86168], [-1.32855, 36.88092], [-1.32856, 36.8831], [-1.32889, 36.88474], [-1.33009, 36.88663], [-1.3376, 36.89521], [-1.33735, 36.89543], [-1.33749, 36.89563], [-1.3374, 36.8958], [-1.33712, 36.89554], [-1.33689, 36.89573]]}, "Nairobi CBD|Rongai": {"distance_km": 18.8, "duration_min": 28.4, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29266, 36.82097], [-1.29303, 36.82075], [-1.29828, 36.82375], [-1.30114, 36.82485], [-1.30457, 36.82646], [-1.30482, 36.82672], [-1.30504, 36.82671], [-1.30547, 36.82552], [-1.30601, 36.82212], [-1.30675, 36.82007], [-1.30722, 36.81983], [-1.30746, 36.8195], [-1.30916, 36.8187], [-1.31251, 36.81608], [-1.31544, 36.81459], [-1.32164, 36.80846], [-1.32228, 36.80735], [-1.32326, 36.80182], [-1.32414, 36.79748], [-1.32442, 36.79675], [-1.33584, 36.77661], [-1.34185, 36.76883], [-1.34273, 36.7669], [-1.34899, 36.7646], [-1.35135, 36.76307], [-1.35268, 36.76277], [-1.35451, 36.76192], [-1.35503, 36.76186], [-1.35782, 36.76251], [-1.36078, 36.76285], [-1.36426, 36.76584], [-1.36752, 36.76762], [-1.36983, 36.76749], [-1.37305, 36.76902], [-1.37454, 36.76951], [-1.38248, 36.77066], [-1.38652, 36.77108], [-1.3874, 36.77058], [-1.38847, 36.7695], [-1.38937, 36.76796], [-1.38984, 36.76747], [-1.39149, 36.76615], [-1.39449, 36.76425], [-1.39542, 36.76342], [-1.39705, 36.75983], [-1.39733, 36.75876], [-1.39691, 36.75205], [-1.39655, 36.75205], [-1.3964, 36.75188]]}, "Nairobi CBD|Ruai": {"distance_km": 23.3, "duration_min": 23.0, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28747, 36.83077], [-1.28683, 36.83152], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28242, 36.83328], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27097, 36.83651], [-1.27025, 36.83657], [-1.26895, 36.84191], [-1.26728, 36.84374], [-1.26596, 36.85025], [-1.26584, 36.8586], [-1.26445, 36.85987], [-1.26399, 36.86061], [-1.26144, 36.86953], [-1.26256, 36.87764], [-1.26253, 36.87839], [-1.26192, 36.87907], [-1.26232, 36.87969], [-1.26171, 36.88501], [-1.26098, 36.88824], [-1.26023, 36.8905], [-1.25824, 36.89323], [-1.25645, 36.89871], [-1.2564, 36.8995], [-1.25654, 36.90007], [-1.25765, 36.90279], [-1.25664, 36.90569], [-1.25675, 36.90789], [-1.25615, 36.90875], [-1.25476, 36.91006], [-1.25448, 36.9107], [-1.25442, 36.91145], [-1.25755, 36.9119], [-1.25955, 36.91237], [-1.25896, 36.91445], [-1.2576, 36.9218], [-1.25612, 36.92705], [-1.25408, 36.93228], [-1.24944, 36.94215], [-1.24902, 36.94344], [-1.24877, 36.94492], [-1.24871, 36.94677], [-1.24899, 36.94874], [-1.24962, 36.95065], [-1.25162, 36.95475], [-1.25482, 36.96653], [-1.25574, 36.96834], [-1.2565, 36.96938], [-1.25757, 36.9705], [-1.26031, 36.97277], [-1.26177, 36.97496], [-1.26478, 36.98512], [-1.26551, 36.98709], [-1.26671, 36.98944], [-1.27082, 36.99617], [-1.271, 36.99611], [-1.27003, 36.99454], [-1.27095, 36.99374], [-1.26948, 36.99128]]}, "Nairobi CBD|Ruaka": {"distance_km": 16.4, "duration_min": 16.7, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28575, 36.83213], [-1.28367, 36.83317], [-1.28259, 36.8333], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27075, 36.83656], [-1.27011, 36.83656], [-1.26951, 36.83631], [-1.26717, 36.83456], [-1.26672, 36.83451], [-1.26567, 36.83527], [-1.2649, 36.83612], [-1.26243, 36.84002], [-1.26086, 36.84178], [-1.25606, 36.84341], [-1.24917, 36.84714], [-1.24859, 36.84719], [-1.24803, 36.84702], [-1.24652, 36.84582], [-1.24371, 36.84457], [-1.23327, 36.84345], [-1.23229, 36.84321], [-1.22948, 36.84089], [-1.22415, 36.83825], [-1.22118, 36.83567], [-1.22041, 36.83548], [-1.21758, 36.83583], [-1.21573, 36.83524], [-1.2158, 36.83219], [-1.21629, 36.82856], [-1.21654, 36.82498], [-1.21625, 36.81925], [-1.21558, 36.81516], [-1.21474, 36.81174], [-1.21341, 36.8078], [-1.21205, 36.80473], [-1.20789, 36.79681], [-1.20783, 36.79631], [-1.20759, 36.79607], [-1.20721, 36.79504], [-1.20644, 36.79148], [-1.20483, 36.78803], [-1.20449, 36.78661], [-1.20465, 36.78652], [-1.20474, 36.78678], [-1.20507, 36.78667], [-1.2058, 36.78603], [-1.20584, 36.78555], [-1.20718, 36.78596], [-1.20677, 36.78434], [-1.20613, 36.78405], [-1.20556, 36.78436]]}, "Nairobi CBD|Ruiru Town": {"distance_km": 24.0, "duration_min": 19.8, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28219, 36.83323], [-1.28161, 36.83293], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27075, 36.83656], [-1.27011, 36.83656], [-1.26951, 36.83631], [-1.26711, 36.83453], [-1.26658, 36.83457], [-1.26567, 36.83527], [-1.26433, 36.83686], [-1.26243, 36.84002], [-1.26079, 36.84209], [-1.25882, 36.84603], [-1.25808, 36.8481], [-1.2579, 36.85261], [-1.25726, 36.85404], [-1.25547, 36.85637], [-1.25349, 36.85849], [-1.24342, 36.86814], [-1.23729, 36.87098], [-1.2361, 36.87172], [-1.23503, 36.87272], [-1.22907, 36.88011], [-1.22429, 36.88668], [-1.22279, 36.88831], [-1.21963, 36.89116], [-1.21935, 36.89125], [-1.21921, 36.89167], [-1.21462, 36.89709], [-1.21352, 36.89943], [-1.20991, 36.9103], [-1.20892, 36.91197], [-1.20371, 36.91702], [-1.20063, 36.91956], [-1.17938, 36.93992], [-1.17597, 36.94272], [-1.17459, 36.94409], [-1.17221, 36.9468], [-1.16776, 36.95456], [-1.16677, 36.9558], [-1.16582, 36.95657], [-1.16408, 36.95743], [-1.16102, 36.95835], [-1.1603, 36.95843], [-1.15472, 36.96018], [-1.15398, 36.96008], [-1.15322, 36.95973], [-1.15161, 36.95787], [-1.15107, 36.95751], [-1.1488, 36.95692], [-1.14814, 36.96034], [-1.14732, 36.96025]]}, "Nairobi CBD|South C": {"distance_km": 5.3, "duration_min": 10.3, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29221, 36.82183], [-1.29266, 36.82097], [-1.29295, 36.82074], [-1.29841, 36.82381], [-1.30114, 36.82485], [-1.30457, 36.82646], [-1.30482, 36.82672], [-1.30507, 36.82669], [-1.31194, 36.82994], [-1.31189, 36.83007], [-1.3116, 36.83002], [-1.31127, 36.83032], [-1.31211, 36.82838], [-1.31256, 36.82797], [-1.31342, 36.82779], [-1.31391, 36.83012], [-1.31438, 36.83034], [-1.31958, 36.82935], [-1.31925, 36.82767], [-1.31885, 36.82782]]}, "Nairobi CBD|Strathmore": {"distance_km": 4.6, "duration_min": 7.9, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29266, 36.82097], [-1.29303, 36.82075], [-1.29828, 36.82375], [-1.30114, 36.82485], [-1.30457, 36.82646], [-1.30482, 36.82672], [-1.30507, 36.82669], [-1.30547, 36.82552], [-1.30592, 36.82251], [-1.30641, 36.82073], [-1.30675, 36.82007], [-1.30728, 36.81973], [-1.30681, 36.81881], [-1.30687, 36.81622], [-1.30821, 36.81623], [-1.30907, 36.81479], [-1.31, 36.81253]]}, "Nairobi CBD|Sunton": {"distance_km": 16.6, "duration_min": 18.1, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28768, 36.83033], [-1.28723, 36.83121], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28219, 36.83323], [-1.28161, 36.83293], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27075, 36.83656], [-1.27011, 36.83656], [-1.26951, 36.83631], [-1.26711, 36.83453], [-1.26658, 36.83457], [-1.26567, 36.83527], [-1.26433, 36.83686], [-1.26243, 36.84002], [-1.26079, 36.84209], [-1.25882, 36.84603], [-1.25808, 36.8481], [-1.2579, 36.85261], [-1.25726, 36.85404], [-1.25547, 36.85637], [-1.25349, 36.85849], [-1.24342, 36.86814], [-1.23729, 36.87098], [-1.23541, 36.87232], [-1.22969, 36.8793], [-1.22429, 36.88668], [-1.22306, 36.88806], [-1.2193, 36.89133], [-1.21934, 36.89166], [-1.22004, 36.89195], [-1.22056, 36.89248], [-1.2207, 36.89313], [-1.21775, 36.8969], [-1.21749, 36.89733], [-1.21747, 36.89781], [-1.21894, 36.90315], [-1.22087, 36.90529], [-1.22395, 36.90825], [-1.22307, 36.91195], [-1.22954, 36.92085], [-1.23442, 36.91874], [-1.23464, 36.91926], [-1.23426, 36.91943], [-1.23445, 36.91981]]}, "Nairobi CBD|Umoja": {"distance_km": 11.7, "duration_min": 15.0, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28747, 36.83077], [-1.28683, 36.83152], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28242, 36.83328], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27097, 36.83651], [-1.27025, 36.83657], [-1.26895, 36.84191], [-1.26728, 36.84374], [-1.26599, 36.85005], [-1.26584, 36.8586], [-1.26445, 36.85987], [-1.26399, 36.86061], [-1.26142, 36.86966], [-1.26254, 36.87728], [-1.26253, 36.87839], [-1.26194, 36.87898], [-1.26207, 36.87935], [-1.26267, 36.87927], [-1.26404, 36.87949], [-1.26879, 36.88064], [-1.26934, 36.88108], [-1.2698, 36.88089], [-1.27435, 36.88213], [-1.27779, 36.8826], [-1.27838, 36.88299], [-1.27979, 36.88289], [-1.28493, 36.88403], [-1.28414, 36.88723], [-1.28425, 36.88726], [-1.28269, 36.89176], [-1.28306, 36.89171], [-1.28296, 36.89222], [-1.28306, 36.89242], [-1.28324, 36.89236]]}, "Nairobi CBD|Utawala": {"distance_km": 24.9, "duration_min": 25.0, "path": [[-1.29029, 36.8251], [-1.28947, 36.82678], [-1.28951, 36.82697], [-1.28901, 36.82745], [-1.28885, 36.82811], [-1.28781, 36.8301], [-1.28763, 36.83017], [-1.28747, 36.83077], [-1.28683, 36.83152], [-1.28386, 36.8331], [-1.28311, 36.83329], [-1.28242, 36.83328], [-1.28182, 36.83308], [-1.28123, 36.83254], [-1.28098, 36.8321], [-1.28056, 36.83192], [-1.28031, 36.83253], [-1.27899, 36.83363], [-1.27702, 36.83417], [-1.27097, 36.83651], [-1.27025, 36.83657], [-1.26895, 36.84191], [-1.26728, 36.84374], [-1.26596, 36.85025], [-1.26584, 36.8586], [-1.26445, 36.85987], [-1.26399, 36.86061], [-1.26144, 36.86953], [-1.26256, 36.87764], [-1.26253, 36.87839], [-1.26192, 36.87907], [-1.26232, 36.87969], [-1.26171, 36.88501], [-1.26098, 36.88824], [-1.26023, 36.8905], [-1.25824, 36.89323], [-1.25645, 36.89871], [-1.2564, 36.8995], [-1.25654, 36.90007], [-1.25765, 36.90279], [-1.25664, 36.90569], [-1.25675, 36.90789], [-1.25615, 36.90875], [-1.25476, 36.91006], [-1.25448, 36.9107], [-1.25442, 36.91145], [-1.25755, 36.9119], [-1.25955, 36.91237], [-1.25896, 36.91445], [-1.2576, 36.9218], [-1.25612, 36.92705], [-1.25408, 36.93228], [-1.24944, 36.94215], [-1.24887, 36.94418], [-1.2487, 36.94604], [-1.24899, 36.94874], [-1.24962, 36.95065], [-1.25162, 36.95475], [-1.25482, 36.96653], [-1.25574, 36.96834], [-1.2565, 36.96938], [-1.25757, 36.9705], [-1.26031, 36.97277], [-1.26177, 36.97496], [-1.26507, 36.98596], [-1.26522, 36.98594], [-1.26446, 36.98355], [-1.26442, 36.98285], [-1.27052, 36.97748], [-1.27445, 36.97266], [-1.27683, 36.97024], [-1.27722, 36.96989], [-1.27741, 36.97024], [-1.28251, 36.97215], [-1.28401, 36.96793]]}, "Nairobi CBD|Uthiru": {"distance_km": 15.3, "duration_min": 13.3, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28904, 36.82739], [-1.28482, 36.82517], [-1.28006, 36.81919], [-1.28001, 36.81865], [-1.28192, 36.8151], [-1.28188, 36.81482], [-1.27931, 36.81394], [-1.27658, 36.81336], [-1.27496, 36.81241], [-1.2741, 36.81153], [-1.27298, 36.80942], [-1.27234, 36.80864], [-1.26514, 36.80231], [-1.26475, 36.80174], [-1.26399, 36.80147], [-1.26278, 36.80048], [-1.26199, 36.79952], [-1.26146, 36.79814], [-1.26108, 36.79516], [-1.26105, 36.79326], [-1.26001, 36.7892], [-1.25898, 36.78058], [-1.25891, 36.77857], [-1.25925, 36.77619], [-1.26083, 36.76855], [-1.2611, 36.76784], [-1.26262, 36.76541], [-1.26292, 36.76467], [-1.26362, 36.76117], [-1.2642, 36.75425], [-1.26469, 36.73648], [-1.2639, 36.72992], [-1.26314, 36.72799], [-1.26104, 36.72438], [-1.26036, 36.72214], [-1.26027, 36.71929], [-1.26108, 36.71494], [-1.26037, 36.71053], [-1.26048, 36.7105], [-1.2606, 36.71123]]}, "Nairobi CBD|Wangige": {"distance_km": 18.9, "duration_min": 20.3, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28904, 36.82739], [-1.28482, 36.82517], [-1.28006, 36.81919], [-1.28001, 36.81865], [-1.28192, 36.8151], [-1.28188, 36.81482], [-1.27931, 36.81394], [-1.27658, 36.81336], [-1.27496, 36.81241], [-1.2741, 36.81153], [-1.27298, 36.80942], [-1.27234, 36.80864], [-1.26514, 36.80231], [-1.26475, 36.80174], [-1.26399, 36.80147], [-1.26278, 36.80048], [-1.26199, 36.79952], [-1.26146, 36.79814], [-1.26108, 36.79516], [-1.26105, 36.79326], [-1.26001, 36.7892], [-1.25903, 36.78092], [-1.25901, 36.7786], [-1.25934, 36.77633], [-1.25963, 36.77569], [-1.25952, 36.77537], [-1.25468, 36.77527], [-1.25318, 36.77585], [-1.24937, 36.7764], [-1.24865, 36.77681], [-1.24491, 36.77969], [-1.24401, 36.78001], [-1.24298, 36.77979], [-1.24057, 36.77785], [-1.23969, 36.77743], [-1.23866, 36.77743], [-1.23651, 36.77786], [-1.23527, 36.77787], [-1.2348, 36.77757], [-1.23417, 36.77572], [-1.23466, 36.77347], [-1.23525, 36.77206], [-1.23546, 36.77112], [-1.23544, 36.77005], [-1.23515, 36.76908], [-1.23537, 36.76706], [-1.23686, 36.76362], [-1.23769, 36.7628], [-1.23782, 36.76241], [-1.23762, 36.76087], [-1.23718, 36.76055], [-1.23688, 36.76004], [-1.23643, 36.75833], [-1.23661, 36.75758], [-1.23616, 36.75592], [-1.23586, 36.75362], [-1.23593, 36.74996], [-1.23462, 36.74697], [-1.23302, 36.73957], [-1.23201, 36.73658], [-1.23097, 36.73475], [-1.22578, 36.72754], [-1.2249, 36.72598], [-1.22103, 36.71584], [-1.22057, 36.715], [-1.21939, 36.71379], [-1.21878, 36.71285], [-1.21988, 36.71262], [-1.22006, 36.71295]]}, "Nairobi CBD|Yaya": {"distance_km": 5.2, "duration_min": 7.8, "path": [[-1.29029, 36.8251], [-1.2894, 36.8272], [-1.28901, 36.82745], [-1.28913, 36.82771], [-1.28937, 36.82763], [-1.29292, 36.82047], [-1.2932, 36.81811], [-1.29381, 36.81558], [-1.2951, 36.81354], [-1.29534, 36.81218], [-1.29548, 36.80952], [-1.29638, 36.80847], [-1.29701, 36.80734], [-1.29511, 36.8064], [-1.29527, 36.80277], [-1.29541, 36.80244], [-1.29527, 36.80226], [-1.29523, 36.79993], [-1.29393, 36.79501], [-1.29244, 36.78805]]}, "Nairobi Hospital|Kenyatta": {"distance_km": 1.5, "duration_min": 3.6, "path": [[-1.29628, 36.80434], [-1.29627, 36.80382], [-1.29519, 36.80385], [-1.29513, 36.80613], [-1.29498, 36.80643], [-1.29688, 36.8074], [-1.29613, 36.80859], [-1.29633, 36.80879], [-1.29681, 36.80895], [-1.29965, 36.80885], [-1.2996, 36.80817], [-1.3008, 36.80813]]}, "Nakumatt|Wangige": {"distance_km": 16.4, "duration_min": 14.6, "path": [[-1.26703, 36.74999], [-1.26639, 36.74881], [-1.2652, 36.74941], [-1.26448, 36.74945], [-1.26433, 36.74682], [-1.26469, 36.73648], [-1.26399, 36.73029], [-1.26333, 36.72837], [-1.26134, 36.725], [-1.26049, 36.72273], [-1.26023, 36.72075], [-1.26027, 36.71929], [-1.26097, 36.71584], [-1.26107, 36.7146], [-1.25963, 36.70628], [-1.25915, 36.70457], [-1.2546, 36.69177], [-1.25417, 36.69094], [-1.24693, 36.68066], [-1.24196, 36.67632], [-1.23695, 36.67363], [-1.2361, 36.67303], [-1.23296, 36.66888], [-1.23295, 36.66822], [-1.23324, 36.668], [-1.23361, 36.66803], [-1.23389, 36.66836], [-1.23385, 36.66876], [-1.23157, 36.6709], [-1.23098, 36.67196], [-1.23068, 36.67299], [-1.22948, 36.68953], [-1.2287, 36.69404], [-1.22767, 36.69812], [-1.22539, 36.70452], [-1.22441, 36.70664], [-1.22225, 36.71055], [-1.22183, 36.71109], [-1.22077, 36.71186], [-1.21973, 36.71232], [-1.21877, 36.71249], [-1.21878, 36.71285], [-1.21988, 36.71262], [-1.22006, 36.71295]]}, "Ngumo|South B": {"distance_km": 7.0, "duration_min": 12.1, "path": [[-1.30853, 36.79839], [-1.30788, 36.7995], [-1.30624, 36.80067], [-1.30599, 36.80137], [-1.30616, 36.80201], [-1.30651, 36.80234], [-1.30765, 36.80289], [-1.30741, 36.80349], [-1.30787, 36.80376], [-1.30781, 36.80416], [-1.31285, 36.80671], [-1.31379, 36.80737], [-1.31457, 36.80832], [-1.31467, 36.80964], [-1.31444, 36.81058], [-1.31245, 36.81582], [-1.30922, 36.81855], [-1.30694, 36.81953], [-1.30642, 36.82034], [-1.30572, 36.82254], [-1.30522, 36.82573], [-1.30467, 36.82652], [-1.30482, 36.82672], [-1.30507, 36.82669], [-1.31354, 36.83065], [-1.31503, 36.83167], [-1.31645, 36.8332], [-1.31916, 36.83784], [-1.31901, 36.8382], [-1.31771, 36.83868], [-1.31579, 36.83827], [-1.31417, 36.83827]]}, "Redhill|Gasolina": {"distance_km": 7.0, "duration_min": 14.2, "path": [[-1.1688, 36.70671], [-1.17021, 36.70548], [-1.17038, 36.70553], [-1.17053, 36.70779], [-1.17096, 36.70941], [-1.17183, 36.71091], [-1.17475, 36.71422], [-1.17571, 36.71606], [-1.17643, 36.71837], [-1.17617, 36.71852], [-1.17506, 36.71803], [-1.17476, 36.71803], [-1.17408, 36.71855], [-1.17261, 36.72154], [-1.17215, 36.72543], [-1.17214, 36.72697], [-1.17207, 36.72723], [-1.17157, 36.72739], [-1.17091, 36.72699], [-1.17015, 36.72592], [-1.16999, 36.72488], [-1.17006, 36.72382], [-1.16958, 36.7225], [-1.16813, 36.72123], [-1.16783, 36.72071], [-1.16682, 36.7156], [-1.16664, 36.71322], [-1.16474, 36.70988], [-1.16413, 36.70759], [-1.16352, 36.70646], [-1.16287, 36.70459], [-1.16257, 36.70315], [-1.16213, 36.70258], [-1.16108, 36.70188], [-1.16067, 36.7014], [-1.16043, 36.69922], [-1.15967, 36.69916], [-1.15964, 36.69957], [-1.15938, 36.69993], [-1.15944, 36.7001], [-1.15965, 36.70012]]}, "Rikana|Joster": {"distance_km": 1.0, "duration_min": 1.9, "path": [[-1.29702, 36.89431], [-1.29715, 36.89441], [-1.29652, 36.89511], [-1.29474, 36.89605], [-1.29291, 36.89838], [-1.29501, 36.89998]]}, "Roundabout|Kayole": {"distance_km": 10.5, "duration_min": 15.4, "path": [[-1.29229, 36.841], [-1.2919, 36.84069], [-1.2916, 36.8408], [-1.29148, 36.84102], [-1.29179, 36.84132], [-1.29205, 36.84201], [-1.29408, 36.85125], [-1.29409, 36.85212], [-1.29465, 36.85362], [-1.29781, 36.86919], [-1.29608, 36.8822], [-1.2961, 36.88297], [-1.29644, 36.88405], [-1.29639, 36.8845], [-1.29496, 36.88689], [-1.29445, 36.88729], [-1.29448, 36.88769], [-1.29425, 36.88821], [-1.2869, 36.89776], [-1.28627, 36.89792], [-1.28316, 36.90222], [-1.28279, 36.9025], [-1.28275, 36.90292], [-1.28149, 36.9052], [-1.27976, 36.90619], [-1.27811, 36.90796], [-1.27626, 36.90874], [-1.2746, 36.91051], [-1.27297, 36.91105], [-1.27069, 36.91307], [-1.26888, 36.91371], [-1.26639, 36.91607], [-1.26709, 36.91732], [-1.26627, 36.91767], [-1.26653, 36.91872], [-1.26692, 36.91929]]}, "Roundabout|Ruai": {"distance_km": 21.8, "duration_min": 21.7, "path": [[-1.29229, 36.841], [-1.2919, 36.84069], [-1.2916, 36.8408], [-1.29148, 36.84102], [-1.29198, 36.84171], [-1.29408, 36.85125], [-1.29407, 36.85191], [-1.29392, 36.85209], [-1.29298, 36.85225], [-1.2926, 36.85369], [-1.28864, 36.86275], [-1.28867, 36.86391], [-1.28853, 36.86437], [-1.28788, 36.86497], [-1.28657, 36.86554], [-1.28601, 36.86649], [-1.28628, 36.86665], [-1.28577, 36.86753], [-1.28428, 36.86874], [-1.2819, 36.87142], [-1.2812, 36.87101], [-1.2808, 36.87098], [-1.27963, 36.87148], [-1.27887, 36.87223], [-1.27808, 36.87371], [-1.27728, 36.87738], [-1.2764, 36.87751], [-1.27193, 36.87747], [-1.27172, 36.8776], [-1.27171, 36.88005], [-1.27133, 36.88129], [-1.27435, 36.88213], [-1.27779, 36.8826], [-1.27822, 36.88291], [-1.27834, 36.88384], [-1.27803, 36.88441], [-1.27653, 36.88586], [-1.27603, 36.88674], [-1.27542, 36.89054], [-1.27481, 36.89305], [-1.27356, 36.89611], [-1.27226, 36.89831], [-1.26948, 36.90146], [-1.26495, 36.90492], [-1.2628, 36.90689], [-1.26156, 36.9085], [-1.26032, 36.91061], [-1.25955, 36.91237], [-1.25903, 36.91414], [-1.2576, 36.9218], [-1.25612, 36.92705], [-1.25408, 36.93228], [-1.24962, 36.9417], [-1.24887, 36.94418], [-1.2487, 36.94655], [-1.24898, 36.9487], [-1.24962, 36.95065], [-1.25162, 36.95475], [-1.25482, 36.96653], [-1.25574, 36.96834], [-1.2565, 36.96938], [-1.25757, 36.9705], [-1.26031, 36.97277], [-1.26177, 36.97496], [-1.26478, 36.98512], [-1.26551, 36.98709], [-1.26671, 36.98944], [-1.27082, 36.99617], [-1.271, 36.99611], [-1.27003, 36.99454], [-1.27095, 36.99374], [-1.26948, 36.99128]]}, "Ruaka|Marurui": {"distance_km": 11.8, "duration_min": 13.8, "path": [[-1.20556, 36.78436], [-1.20613, 36.78405], [-1.20677, 36.78434], [-1.20702, 36.78576], [-1.20682, 36.78592], [-1.20584, 36.78555], [-1.2058, 36.78603], [-1.20495, 36.78676], [-1.20474, 36.78678], [-1.2048, 36.78713], [-1.2046, 36.78719], [-1.20483, 36.78803], [-1.20644, 36.79148], [-1.20749, 36.79644], [-1.20778, 36.79672], [-1.21205, 36.80473], [-1.21364, 36.80841], [-1.21497, 36.81252], [-1.21572, 36.81585], [-1.21625, 36.81925], [-1.21654, 36.82498], [-1.21629, 36.82856], [-1.2156, 36.83369], [-1.2155, 36.83542], [-1.21563, 36.83792], [-1.21644, 36.84501], [-1.21647, 36.84649], [-1.2161, 36.84853], [-1.21567, 36.85009], [-1.21532, 36.85063], [-1.21545, 36.85111], [-1.21506, 36.8652], [-1.21487, 36.86704], [-1.21412, 36.86906], [-1.21122, 36.87441], [-1.2104, 36.87446], [-1.21042, 36.87284], [-1.20743, 36.87273], [-1.20746, 36.87197], [-1.2069, 36.87196], [-1.20694, 36.87114], [-1.20622, 36.87112]]}, "Ruiru|Thika": {"distance_km": 26.3, "duration_min": 23.1, "path": [[-1.17745, 36.98241], [-1.17896, 36.98471], [-1.17907, 36.98463], [-1.16876, 36.96854], [-1.16777, 36.96627], [-1.16506, 36.95789], [-1.16511, 36.95721], [-1.16486, 36.95678], [-1.16168, 36.95816], [-1.1493, 36.96214], [-1.14614, 36.96325], [-1.14555, 36.96361], [-1.14475, 36.96431], [-1.14232, 36.96707], [-1.13492, 36.97194], [-1.13397, 36.97284], [-1.13288, 36.97435], [-1.13231, 36.97576], [-1.13058, 36.98184], [-1.12982, 36.98549], [-1.12933, 36.98954], [-1.12917, 36.99591], [-1.12876, 36.998], [-1.12818, 36.99921], [-1.12741, 37.00026], [-1.11983, 37.0089], [-1.11851, 37.0099], [-1.117, 37.01066], [-1.11017, 37.01293], [-1.10894, 37.01362], [-1.1079, 37.01447], [-1.09798, 37.02514], [-1.09129, 37.03358], [-1.08326, 37.04093], [-1.07898, 37.04408], [-1.06628, 37.05189], [-1.06355, 37.05324], [-1.05308, 37.05685], [-1.04478, 37.06039], [-1.04015, 37.06254], [-1.03889, 37.06267], [-1.03818, 37.06231], [-1.03784, 37.06154], [-1.03798, 37.06094], [-1.0383, 37.06054], [-1.03876, 37.06031], [-1.03954, 37.06037], [-1.04009, 37.06077], [-1.04065, 37.06163], [-1.0426, 37.06623], [-1.04342, 37.07066], [-1.04319, 37.07089], [-1.0387, 37.0722], [-1.0373, 37.07238], [-1.03783, 37.07659], [-1.03654, 37.07673]]}, "Umoja/Donholm|Komarock": {"distance_km": 5.1, "duration_min": 8.4, "path": [[-1.2989, 36.88845], [-1.2982, 36.88934], [-1.29928, 36.89014], [-1.2988, 36.89223], [-1.29666, 36.89499], [-1.29496, 36.89587], [-1.29456, 36.89625], [-1.29281, 36.89851], [-1.29253, 36.8997], [-1.29136, 36.90124], [-1.28974, 36.90203], [-1.28775, 36.90455], [-1.28742, 36.90465], [-1.28546, 36.90392], [-1.28285, 36.90245], [-1.28275, 36.90292], [-1.28134, 36.90534], [-1.27976, 36.90619], [-1.27811, 36.90796], [-1.27626, 36.90874], [-1.2746, 36.91051], [-1.27297, 36.91105], [-1.27262, 36.91056], [-1.27088, 36.90908], [-1.27183, 36.90774], [-1.27212, 36.90752], [-1.2724, 36.90779]]}, "Wangige|Kikuyu": {"distance_km": 6.7, "duration_min": 7.7, "path": [[-1.22006, 36.71295], [-1.21988, 36.71262], [-1.22103, 36.71207], [-1.22226, 36.7108], [-1.22452, 36.70665], [-1.22669, 36.70147], [-1.22813, 36.6969], [-1.22889, 36.69381], [-1.22967, 36.68901], [-1.23074, 36.67352], [-1.23127, 36.67173], [-1.23205, 36.67048], [-1.23303, 36.66964], [-1.23746, 36.66665], [-1.23933, 36.66624], [-1.23924, 36.6656], [-1.24228, 36.66519], [-1.24353, 36.66437], [-1.24372, 36.66474]]}, "Westlands|Kawangware": {"distance_km": 7.4, "duration_min": 10.7, "path": [[-1.24663, 36.78607], [-1.24637, 36.78336], [-1.24537, 36.77763], [-1.2455, 36.7765], [-1.24636, 36.77439], [-1.24744, 36.77626], [-1.24737, 36.77888], [-1.24813, 36.77805], [-1.24809, 36.77738], [-1.24938, 36.7765], [-1.25313, 36.77595], [-1.25448, 36.7754], [-1.255, 36.77533], [-1.25657, 36.77538], [-1.25858, 36.77571], [-1.25917, 36.776], [-1.25951, 36.77592], [-1.25963, 36.77569], [-1.25954, 36.77512], [-1.2609, 36.76831], [-1.26262, 36.76541], [-1.26307, 36.76408], [-1.26318, 36.76407], [-1.26318, 36.76438], [-1.26752, 36.7623], [-1.26722, 36.76135], [-1.26953, 36.76106], [-1.27037, 36.7611], [-1.27093, 36.76074], [-1.27139, 36.76067], [-1.2739, 36.76058], [-1.27479, 36.75823], [-1.27713, 36.75387], [-1.2781, 36.75155]]}, "Westlands|Yaya": {"distance_km": 8.6, "duration_min": 12.6, "path": [[-1.24663, 36.78607], [-1.24637, 36.78336], [-1.24537, 36.77763], [-1.2455, 36.7765], [-1.24636, 36.77439], [-1.24744, 36.77626], [-1.24737, 36.77888], [-1.24813, 36.77805], [-1.24809, 36.77738], [-1.24938, 36.7765], [-1.25313, 36.77595], [-1.25448, 36.7754], [-1.255, 36.77533], [-1.25716, 36.77545], [-1.25858, 36.77571], [-1.25917, 36.776], [-1.25983, 36.77575], [-1.26089, 36.7758], [-1.26139, 36.7754], [-1.26266, 36.77326], [-1.26321, 36.7728], [-1.26375, 36.77261], [-1.26437, 36.77262], [-1.2652, 36.77295], [-1.26847, 36.77513], [-1.26988, 36.77531], [-1.27102, 36.77517], [-1.27212, 36.77475], [-1.27571, 36.77211], [-1.27759, 36.77322], [-1.27816, 36.77392], [-1.27911, 36.77911], [-1.28285, 36.7849], [-1.28317, 36.78569], [-1.28496, 36.788], [-1.2854, 36.7882], [-1.28564, 36.78797], [-1.28637, 36.7877], [-1.28922, 36.78709], [-1.28941, 36.78683], [-1.29195, 36.78719], [-1.29226, 36.78746], [-1.29244, 36.78805]]}};
+    const LINE_MAPPINGS = {
+      "100": "A Line", "120": "A Line", "121": "A Line",
+      "17B": "B Line", "25": "B Line", "25A": "B Line", "29/30": "B Line", "43": "B Line", "44": "B Line", "45": "B Line", "49": "B Line", "145": "B Line",
+      "6": "C Line", "14": "C Line", "17A": "C Line", "17AKY": "C Line", "18C": "C Line", "31": "C Line", "32": "C Line", "46": "C Line", "37/38": "C Line",
+      "10": "D Line", "23": "D Line", "26": "D Line", "36": "D Line", "58": "D Line",
+      "35/60": "E Line", "38/39": "E Line", "19C2": "E Line",
+      "111": "F Line", "125": "F Line", "126": "F Line",
+      "19C": "F Line", "34B": "F Line", "1960": "F Line", "1961C": "F Line", "1961CK": "F Line",
+      "33F": "G Line", "33PJ": "G Line", "33PM": "G Line", "34": "G Line", "70/71": "G Line",
+      "12C": "H Line", "12D": "H Line", "33": "H Line", "110ATH": "H Line", "110KIT": "H Line",
+      "14A": "I Line", "14B": "I Line", "15": "I Line", "16": "I Line",
+      "7C": "J Line", "8": "J Line", "24": "J Line", "24C": "J Line",
+      "2": "K Line", "4W": "K Line", "102": "K Line",
+      "48": "M Line", "48A": "M Line", "48B": "M Line",
+      "22": "N Line", "30": "N Line", "105": "N Line", "115": "N Line",
+      "118": "O Line", "119": "O Line", "103": "O Line", "11B": "O Line",
+      "11A": "P Line", "11F": "P Line", "106": "P Line", "107": "P Line", "116": "P Line"
+    };
+
+
+    const NAIROBI = [-1.2864, 36.8172];
+    const REFRESH_MS = 30000;
+    const PALETTE = [
+      "#38bdf8", "#f97316", "#a3e635", "#e879f9", "#facc15",
+      "#2dd4bf", "#fb7185", "#818cf8", "#4ade80", "#fbbf24",
+      "#c084fc", "#22d3ee", "#fca5a5", "#93c5fd", "#86efac",
+      "#f9a8d4", "#fde68a"
+    ];
+    const SEVERITY_COLORS = { high: "#ef4444", medium: "#f59e0b", low: "#22c55e" };
+    const SEVERITY_ORDER = { high: 3, medium: 2, low: 1 };
+    const ACTIVE_STATUSES = new Set(["reported", "verified"]);
+
+    const state = {
+      routes: [],
+      incidents: [],
+      routeById: new Map(),
+      lineColors: new Map(),
+      routeLayers: new Map(),
+      incidentMarkers: new Map(),
+      selectedRouteId: null,
+      activeTab: "routes",
+      lineFilter: "all",
+      search: "",
+      incidentStatus: "active",
+      incidentSeverity: "all",
+      showRoutes: true,
+      showIncidents: true,
+    };
+
+    const map = L.map("map", { zoomControl: false, preferCanvas: true })
+      .setView(NAIROBI, 11);
+    L.control.zoom({ position: "bottomright" }).addTo(map);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+
+    const routeLayer = L.layerGroup().addTo(map);
+    const incidentLayer = L.layerGroup().addTo(map);
+    const userLayer = L.layerGroup().addTo(map);
+
+    const el = {
+      sidebar: document.getElementById("sidebar"),
+      sidebarOpen: document.getElementById("sidebar-open"),
+      sidebarClose: document.getElementById("sidebar-close"),
+      statusDot: document.getElementById("status-dot"),
+      statusText: document.getElementById("status-text"),
+      routeCount: document.getElementById("route-count"),
+      incidentCount: document.getElementById("incident-count"),
+      search: document.getElementById("search"),
+      lineFilter: document.getElementById("line-filter"),
+      showRoutes: document.getElementById("show-routes"),
+      showIncidents: document.getElementById("show-incidents"),
+      incidentStatus: document.getElementById("incident-status"),
+      incidentSeverity: document.getElementById("incident-severity"),
+      routeList: document.getElementById("route-list"),
+      incidentList: document.getElementById("incident-list"),
+      routesPanel: document.getElementById("routes-panel"),
+      incidentsPanel: document.getElementById("incidents-panel"),
+      detail: document.getElementById("route-detail"),
+      detailBadge: document.getElementById("detail-badge"),
+      detailLine: document.getElementById("detail-line"),
+      detailRoute: document.getElementById("detail-route"),
+      detailBase: document.getElementById("detail-base"),
+      detailFare: document.getElementById("detail-fare"),
+      detailMultiplier: document.getElementById("detail-multiplier"),
+      detailSacco: document.getElementById("detail-sacco"),
+      detailReasons: document.getElementById("detail-reasons"),
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      }[char]));
+    }
+
+    function timeAgo(value) {
+      if (!value) return "";
+      const then = new Date(value).getTime();
+      if (Number.isNaN(then)) return "";
+      const minutes = Math.max(0, Math.round((Date.now() - then) / 60000));
+      if (minutes < 1) return "just now";
+      if (minutes < 60) return minutes + "m ago";
+      const hours = Math.round(minutes / 60);
+      if (hours < 24) return hours + "h ago";
+      return new Date(value).toLocaleString();
+    }
+
+    async function fetchJSON(url) {
+      const response = await fetch(url, { headers: { Accept: "application/json" } });
+      if (!response.ok) throw new Error(url + " returned HTTP " + response.status);
+      return response.json();
+    }
+
+    function setStatus(kind, text) {
+      el.statusDot.className = "dot " + (kind === "ok" ? "" : kind);
+      el.statusText.textContent = text;
+    }
+
+    function assignLineColors(routes) {
+      const lines = [...new Set(routes.map((route) => route.line))].sort();
+      state.lineColors.clear();
+      lines.forEach((line, index) => {
+        state.lineColors.set(line, PALETTE[index % PALETTE.length]);
+      });
+    }
+
+    function routeHasCoordinates(route) {
+      return [route.start_lat, route.start_lon, route.end_lat, route.end_lon]
+        .every((value) => typeof value === "number" && Number.isFinite(value));
+    }
+
+    function routeLatLngs(route) {
+      if (Array.isArray(route.path) && route.path.length > 1) {
+        return route.path;
+      }
+      if (routeHasCoordinates(route)) {
+        return [[route.start_lat, route.start_lon], [route.end_lat, route.end_lon]];
+      }
+      return null;
+    }
+
+    function incidentCoordinates(incident) {
+      if (
+        typeof incident.latitude === "number" &&
+        typeof incident.longitude === "number" &&
+        Number.isFinite(incident.latitude) &&
+        Number.isFinite(incident.longitude)
+      ) {
+        return { latlng: [incident.latitude, incident.longitude], approximate: false };
+      }
+      const route = state.routeById.get(incident.route_id);
+      if (route && routeHasCoordinates(route)) {
+        return { latlng: [route.start_lat, route.start_lon], approximate: true };
+      }
+      return null;
+    }
+
+    function popupForRoute(route) {
+      const fare = "KSh " + route.base_fare_min + "–" + route.base_fare_max;
+      return (
+        '<div class="popup-title">Route ' + escapeHtml(route.route_number) + "</div>" +
+        '<div class="popup-body"><span class="popup-route">' +
+        escapeHtml(route.start) + " → " + escapeHtml(route.end) + "</span><br>" +
+        escapeHtml(route.line) + " · " + escapeHtml(route.sacco) + "<br>Base fare " + fare +
+        "</div>" +
+        '<div class="popup-meta">Click the route to see the live fare.</div>'
+      );
+    }
+
+    function popupForIncident(incident, approximate) {
+      const color = SEVERITY_COLORS[incident.severity] || "#f59e0b";
+      const route = state.routeById.get(incident.route_id);
+      const routeText = route
+        ? "Route " + route.route_number + " · " + route.start + " → " + route.end
+        : "Route " + incident.route_id;
+      const statusLabel = String(incident.status || "").replace(/^\w/, (char) => char.toUpperCase());
+      const approximateText = approximate
+        ? '<div class="popup-meta" style="color:#b45309">Approximate location: route start stage (no GPS pin was supplied).</div>'
+        : "";
+      return (
+        '<div class="popup-title"><i style="background:' + color + '"></i>' +
+        escapeHtml(incident.severity) + " severity · " + escapeHtml(statusLabel) + "</div>" +
+        '<p class="popup-body">' + escapeHtml(incident.description) + "</p>" +
+        '<div class="popup-meta"><span class="popup-route">' + escapeHtml(routeText) + "</span><br>" +
+        "Reported " + escapeHtml(timeAgo(incident.reported_at)) + "</div>" +
+        approximateText
+      );
+    }
+
+    function popupForIncidentGroup(group) {
+      if (group.items.length === 1) {
+        return popupForIncident(group.items[0].incident, group.approximate);
+      }
+      const rows = group.items.map(({ incident }) => {
+        const color = SEVERITY_COLORS[incident.severity] || "#f59e0b";
+        const statusLabel = String(incident.status || "").replace(/^\w/, (char) => char.toUpperCase());
+        return (
+          '<p class="popup-body" style="margin:0">' +
+          '<span style="color:' + color + ';font-weight:800">' + escapeHtml(incident.severity) + "</span> · " +
+          escapeHtml(statusLabel) + " · " + escapeHtml(timeAgo(incident.reported_at)) + "<br>" +
+          escapeHtml(incident.description) + "</p>"
+        );
+      });
+      return (
+        '<div class="popup-title">' + group.items.length + " incidents here</div>" +
+        rows.join('<hr style="border:0;border-top:1px solid #e2e8f0;margin:8px 0">') +
+        (group.approximate
+          ? '<div class="popup-meta" style="color:#b45309">Approximate location: route start stage (no GPS pin supplied).</div>'
+          : "")
+      );
+    }
+
+    function filteredRoutes() {
+      const needle = state.search.trim().toLowerCase();
+      return state.routes.filter((route) => {
+        if (state.lineFilter !== "all" && route.line !== state.lineFilter) return false;
+        if (!needle) return true;
+        return [route.route_number, route.line, route.start, route.end, route.sacco]
+          .some((value) => String(value || "").toLowerCase().includes(needle));
+      });
+    }
+
+    function filteredIncidents() {
+      return state.incidents.filter((incident) => {
+        const status = String(incident.status || "");
+        if (state.incidentStatus === "active" && !ACTIVE_STATUSES.has(status)) return false;
+        if (state.incidentStatus === "resolved" && ACTIVE_STATUSES.has(status)) return false;
+        if (state.incidentSeverity !== "all" && incident.severity !== state.incidentSeverity) return false;
+        return incidentCoordinates(incident) !== null;
+      });
+    }
+
+    function renderRoutes() {
+      routeLayer.clearLayers();
+      state.routeLayers.clear();
+      const routes = filteredRoutes();
+      el.routeCount.textContent = String(routes.length);
+
+      if (!state.showRoutes) {
+        renderRouteList(routes);
+        return;
+      }
+
+      for (const route of routes) {
+        const latlngs = routeLatLngs(route);
+        if (!latlngs) continue;
+        const baseColor = state.lineColors.get(route.line) || "#38bdf8";
+        const selected = route.id === state.selectedRouteId;
+        const polyline = L.polyline(
+          latlngs,
+          {
+            color: selected ? "#f97316" : baseColor,
+            weight: selected ? 7 : 3,
+            opacity: selected ? 1 : 0.58,
+            lineCap: "round",
+          }
+        );
+        polyline.bindTooltip(
+          route.route_number + " · " + route.start + " → " + route.end,
+          { sticky: true, direction: "top", opacity: 0.95 }
+        );
+        polyline.bindPopup(popupForRoute(route), { closeButton: true });
+        polyline.on("click", () => selectRoute(route.id, { zoom: false }));
+        routeLayer.addLayer(polyline);
+        state.routeLayers.set(route.id, polyline);
+        if (selected) polyline.bringToFront();
+      }
+
+      renderRouteList(routes);
+    }
+
+    function renderRouteList(routes) {
+      if (!routes.length) {
+        el.routeList.innerHTML = '<div class="empty">No routes match those filters.</div>';
+        return;
+      }
+      const fragment = document.createDocumentFragment();
+      for (const route of routes) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "route-item" + (route.id === state.selectedRouteId ? " selected" : "");
+        button.dataset.routeId = String(route.id);
+        const color = state.lineColors.get(route.line) || "#38bdf8";
+        button.innerHTML =
+          '<span class="route-number" style="--line-color:' + color + '">' +
+          escapeHtml(route.route_number) + "</span>" +
+          '<span class="route-main">' +
+          '<span class="route-title">' + escapeHtml(route.start) + " → " + escapeHtml(route.end) + "</span>" +
+          '<span class="route-sub">' + escapeHtml(route.line) + " · " + escapeHtml(route.sacco) +
+          " · KSh " + route.base_fare_min + "–" + route.base_fare_max + "</span>" +
+          "</span>";
+        fragment.appendChild(button);
+      }
+      el.routeList.replaceChildren(fragment);
+    }
+
+    // Incidents that share a location (common for approximate fallbacks) are
+    // grouped into one marker with a count badge.
+    function groupIncidents(incidents) {
+      const groups = new Map();
+      for (const incident of incidents) {
+        const location = incidentCoordinates(incident);
+        if (!location) continue;
+        const key = location.latlng[0].toFixed(5) + "," + location.latlng[1].toFixed(5);
+        let group = groups.get(key);
+        if (!group) {
+          group = { latlng: location.latlng, approximate: location.approximate, items: [] };
+          groups.set(key, group);
+        }
+        group.items.push({ incident, location });
+      }
+      return [...groups.values()];
+    }
+
+    function renderIncidents() {
+      incidentLayer.clearLayers();
+      state.incidentMarkers.clear();
+      const incidents = filteredIncidents();
+      el.incidentCount.textContent = String(incidents.length);
+
+      if (state.showIncidents) {
+        for (const group of groupIncidents(incidents)) {
+          const count = group.items.length;
+          const active = group.items.some(({ incident }) => ACTIVE_STATUSES.has(String(incident.status)));
+          const severity = group.items.reduce(
+            (best, { incident }) =>
+              (SEVERITY_ORDER[incident.severity] || 0) > (SEVERITY_ORDER[best] || 0)
+                ? incident.severity
+                : best,
+            "low"
+          );
+          const color = active ? (SEVERITY_COLORS[severity] || "#f59e0b") : "#94a3b8";
+          const hasCount = count > 1;
+          const icon = L.divIcon({
+            className: "incident-icon-wrap",
+            html: '<span class="incident-pin ' + (active ? "active " : "") +
+              (hasCount ? "has-count" : "") + '" style="--pin:' + color + '">' +
+              (hasCount ? count : "") + "</span>",
+            iconSize: hasCount ? [30, 30] : [18, 18],
+            iconAnchor: hasCount ? [15, 15] : [9, 9],
+            popupAnchor: [0, hasCount ? -16 : -10],
+          });
+          const marker = L.marker(group.latlng, {
+            icon,
+            title: hasCount ? count + " incidents" : group.items[0].incident.description,
+          });
+          marker.bindPopup(popupForIncidentGroup(group));
+          marker.addTo(incidentLayer);
+          for (const { incident } of group.items) {
+            state.incidentMarkers.set(incident.id, { marker, incident });
+          }
+        }
+      }
+
+      renderIncidentList(incidents);
+    }
+
+    function renderIncidentList(incidents) {
+      if (!incidents.length) {
+        el.incidentList.innerHTML =
+          '<div class="empty">No incidents match these filters.<br>Report one with POST /api/v1/accidents and include latitude/longitude for an exact pin.</div>';
+        return;
+      }
+      const fragment = document.createDocumentFragment();
+      for (const incident of incidents) {
+        const location = incidentCoordinates(incident);
+        const route = state.routeById.get(incident.route_id);
+        const active = ACTIVE_STATUSES.has(String(incident.status));
+        const color = active ? (SEVERITY_COLORS[incident.severity] || "#f59e0b") : "#94a3b8";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "incident-item";
+        button.dataset.incidentId = String(incident.id);
+        button.innerHTML =
+          '<span class="severity-dot" style="--dot:' + color + '"></span>' +
+          '<span class="incident-main">' +
+          '<span class="incident-title">' + escapeHtml(incident.description) + "</span>" +
+          '<span class="incident-sub">' +
+          (route ? "Route " + escapeHtml(route.route_number) + " · " : "") +
+          escapeHtml(incident.severity) + " · " + escapeHtml(incident.status) +
+          " · " + escapeHtml(timeAgo(incident.reported_at)) +
+          (location && location.approximate ? " · approximate" : "") +
+          "</span></span>";
+        fragment.appendChild(button);
+      }
+      el.incidentList.replaceChildren(fragment);
+    }
+
+    function updateSelectionStyles() {
+      for (const [routeId, polyline] of state.routeLayers) {
+        const route = state.routeById.get(routeId);
+        if (!route) continue;
+        const selected = routeId === state.selectedRouteId;
+        polyline.setStyle({
+          color: selected ? "#f97316" : (state.lineColors.get(route.line) || "#38bdf8"),
+          weight: selected ? 7 : 3,
+          opacity: selected ? 1 : 0.58,
+        });
+        if (selected) polyline.bringToFront();
+      }
+      for (const button of el.routeList.querySelectorAll(".route-item")) {
+        button.classList.toggle("selected", Number(button.dataset.routeId) === state.selectedRouteId);
+      }
+    }
+
+    async function selectRoute(routeId, options = {}) {
+      const route = state.routeById.get(routeId);
+      if (!route) return;
+      state.selectedRouteId = routeId;
+      updateSelectionStyles();
+      showRouteDetail(route);
+
+      const latlngs = routeLatLngs(route);
+      if (latlngs) {
+        const bounds = L.latLngBounds(latlngs);
+        if (options.zoom) map.fitBounds(bounds.pad(0.2), { maxZoom: 14 });
+        const polyline = state.routeLayers.get(routeId);
+        if (polyline) polyline.openPopup(latlngs[Math.floor(latlngs.length / 2)]);
+      }
+      if (window.innerWidth <= 820) closeSidebar();
+    }
+
+    async function showRouteDetail(route) {
+      el.detail.hidden = false;
+      el.detail.classList.remove("surge");
+      el.detailBadge.textContent = route.route_number;
+      el.detailLine.textContent = route.line;
+      el.detailRoute.textContent = route.start + " → " + route.end;
+      el.detailBase.textContent = "KSh " + route.base_fare_min + "–" + route.base_fare_max;
+      el.detailSacco.textContent = route.sacco;
+      el.detailFare.textContent = "…";
+      el.detailMultiplier.textContent = "…";
+      el.detailReasons.textContent = "Fetching current fare…";
+
+      try {
+        const fare = await fetchJSON("/api/v1/routes/" + route.id + "/fare");
+        if (state.selectedRouteId !== route.id) return;
+        el.detailFare.textContent = "KSh " + fare.fare_min + "–" + fare.fare_max;
+        el.detailMultiplier.textContent = Number(fare.multiplier).toFixed(2) + "×";
+        el.detailReasons.textContent = (fare.reasons && fare.reasons.length)
+          ? fare.reasons.join(" · ")
+          : "Normal conditions";
+        if (fare.active) el.detail.classList.add("surge");
+      } catch (error) {
+        if (state.selectedRouteId !== route.id) return;
+        el.detailFare.textContent = "—";
+        el.detailMultiplier.textContent = "—";
+        el.detailReasons.textContent = "Could not load the live fare.";
+      }
+    }
+
+    function clearSelection() {
+      state.selectedRouteId = null;
+      el.detail.hidden = true;
+      updateSelectionStyles();
+    }
+
+    function renderLineFilter() {
+      const counts = new Map();
+      for (const route of state.routes) {
+        counts.set(route.line, (counts.get(route.line) || 0) + 1);
+      }
+      const lines = [...counts.keys()].sort();
+      const options = ['<option value="all">All lines (' + state.routes.length + ")</option>"];
+      for (const line of lines) {
+        options.push('<option value="' + escapeHtml(line) + '">' + escapeHtml(line) + " (" + counts.get(line) + ")</option>");
+      }
+      el.lineFilter.innerHTML = options.join("");
+      el.lineFilter.value = state.lineFilter;
+    }
+
+    function fitRoutes(routes = filteredRoutes()) {
+      const bounds = L.latLngBounds();
+      let hasPoints = false;
+      for (const route of routes) {
+        const latlngs = routeLatLngs(route);
+        if (!latlngs) continue;
+        bounds.extend(latlngs);
+        hasPoints = true;
+      }
+      if (!hasPoints) {
+        map.setView(NAIROBI, 11);
+        return;
+      }
+      map.fitBounds(bounds.pad(0.12), { maxZoom: 12 });
+    }
+
+    function focusIncident(incidentId) {
+      const entry = state.incidentMarkers.get(incidentId);
+      if (!entry) return;
+      const { marker } = entry;
+      map.setView(marker.getLatLng(), Math.max(map.getZoom(), 14), { animate: true });
+      marker.openPopup();
+      if (window.innerWidth <= 820) closeSidebar();
+    }
+
+    function openSidebar() {
+      el.sidebar.classList.add("open");
+      setTimeout(() => map.invalidateSize(), 250);
+    }
+    function closeSidebar() {
+      el.sidebar.classList.remove("open");
+      setTimeout(() => map.invalidateSize(), 250);
+    }
+
+    function switchTab(tab) {
+      state.activeTab = tab;
+      document.querySelectorAll(".tabs button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.tab === tab);
+      });
+      el.routesPanel.hidden = tab !== "routes";
+      el.incidentsPanel.hidden = tab !== "incidents";
+    }
+
+    function locateUser() {
+      if (!navigator.geolocation) {
+        setStatus("error", "Geolocation is not available in this browser.");
+        return;
+      }
+      setStatus("loading", "Getting your location…");
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const latlng = [position.coords.latitude, position.coords.longitude];
+          userLayer.clearLayers();
+          L.circle(latlng, {
+            radius: Math.max(position.coords.accuracy || 30, 20),
+            color: "#2563eb",
+            fillColor: "#3b82f6",
+            fillOpacity: 0.15,
+            weight: 1,
+          }).addTo(userLayer);
+          L.circleMarker(latlng, {
+            radius: 7,
+            color: "#fff",
+            weight: 3,
+            fillColor: "#2563eb",
+            fillOpacity: 1,
+          }).addTo(userLayer).bindPopup("You are here");
+          map.setView(latlng, 14);
+          setStatus("ok", "Centred on your location.");
+        },
+        (error) => {
+          setStatus("error", "Location unavailable: " + error.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    }
+
+    async function loadRoutes() {
+      let rawRoutes;
+      try {
+        rawRoutes = await fetchJSON("/api/v1/routes?limit=200");
+      } catch (e) {
+        rawRoutes = await fetchJSON("/api/routes?limit=200");
+      }
+      const routes = rawRoutes.map((r) => {
+        const route_number = r.route_number || r.number || String(r.id);
+        const nameParts = (r.name || "").split(" → ");
+        const start = r.start || nameParts[0] || "Nairobi CBD";
+        const end = r.end || nameParts[1] || r.destination || "Nairobi";
+        const line = r.line || LINE_MAPPINGS[route_number] || (r.via ? (r.via.includes("Line") ? r.via : r.via + " Line") : "Main Line");
+        const sacco = r.sacco || "Matatu SACCO";
+        const base_fare_min = r.base_fare_min || (r.usual_fare ? Math.max(30, r.usual_fare - 20) : 50);
+        const base_fare_max = r.base_fare_max || (r.usual_fare ? r.usual_fare + 20 : 100);
+
+        const startLoc = EMBEDDED_LOCATIONS[start] || EMBEDDED_LOCATIONS["Nairobi CBD"] || { lat: -1.2864, lon: 36.8172 };
+        const endLoc = EMBEDDED_LOCATIONS[end] || EMBEDDED_LOCATIONS[r.destination] || { lat: -1.2864, lon: 36.8172 };
+
+        const geoKey1 = start + "|" + end;
+        const geoKey2 = "Nairobi CBD|" + end;
+        const geo = EMBEDDED_GEOMETRY[geoKey1] || EMBEDDED_GEOMETRY[geoKey2];
+        const path = r.path || (geo && geo.path) || [
+          [startLoc.lat, startLoc.lon],
+          [endLoc.lat, endLoc.lon]
+        ];
+
+        return {
+          id: r.id,
+          line,
+          route_number,
+          start,
+          end,
+          sacco,
+          base_fare_min,
+          base_fare_max,
+          start_lat: r.start_lat ?? startLoc.lat,
+          start_lon: r.start_lon ?? startLoc.lon,
+          end_lat: r.end_lat ?? endLoc.lat,
+          end_lon: r.end_lon ?? endLoc.lon,
+          path,
+        };
+      });
+      state.routes = routes;
+      state.routeById = new Map(routes.map((route) => [route.id, route]));
+      assignLineColors(routes);
+      renderLineFilter();
+      renderRoutes();
+      if (state.selectedRouteId && !state.routeById.has(state.selectedRouteId)) {
+        clearSelection();
+      }
+      return routes;
+    }
+
+    async function loadIncidents() {
+      let rawInc = [];
+      try {
+        rawInc = await fetchJSON("/api/v1/accidents?limit=200");
+      } catch (e) {
+        try { rawInc = await fetchJSON("/api/accidents?limit=200"); } catch (e2) {}
+      }
+      const incidents = rawInc.map((inc) => {
+        const stageLoc = inc.stage ? EMBEDDED_LOCATIONS[inc.stage] : null;
+        return {
+          id: inc.id,
+          route_id: inc.route_id,
+          severity: inc.severity || (inc.type === 'accident' ? 'high' : inc.type === 'jam' ? 'medium' : 'low'),
+          status: inc.status || 'verified',
+          description: inc.description || (inc.stage ? ((inc.type || 'Incident').toUpperCase() + ' around ' + inc.stage) : (inc.type || 'Traffic incident')),
+          reported_at: inc.reported_at || inc.created_at || inc.updated_at,
+          latitude: typeof inc.latitude === 'number' ? inc.latitude : (stageLoc ? stageLoc.lat : null),
+          longitude: typeof inc.longitude === 'number' ? inc.longitude : (stageLoc ? stageLoc.lon : null),
+        };
+      });
+      state.incidents = incidents;
+      renderIncidents();
+      return incidents;
+    }
+
+    async function loadData({ routes = true } = {}) {
+      setStatus("loading", routes ? "Refreshing map data…" : "Refreshing incidents…");
+      try {
+        if (routes) await loadRoutes();
+        const incidents = await loadIncidents();
+        const stamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+        setStatus(
+          "ok",
+          "Live · updated " + stamp + " · " + state.routes.length + " routes · " + incidents.length + " reports"
+        );
+      } catch (error) {
+        console.error(error);
+        setStatus("error", "Could not load data. Is the API running?");
+      }
+    }
+
+    // Filter and control wiring
+    el.search.addEventListener("input", (event) => {
+      state.search = event.target.value;
+      renderRoutes();
+    });
+
+    el.lineFilter.addEventListener("change", (event) => {
+      state.lineFilter = event.target.value;
+      renderRoutes();
+      fitRoutes();
+    });
+
+    el.showRoutes.addEventListener("change", (event) => {
+      state.showRoutes = event.target.checked;
+      renderRoutes();
+    });
+    el.showIncidents.addEventListener("change", (event) => {
+      state.showIncidents = event.target.checked;
+      renderIncidents();
+    });
+    el.incidentStatus.addEventListener("change", (event) => {
+      state.incidentStatus = event.target.value;
+      renderIncidents();
+    });
+    el.incidentSeverity.addEventListener("change", (event) => {
+      state.incidentSeverity = event.target.value;
+      renderIncidents();
+    });
+
+    el.routeList.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-route-id]");
+      if (button) selectRoute(Number(button.dataset.routeId), { zoom: true });
+    });
+    el.incidentList.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-incident-id]");
+      if (button) focusIncident(Number(button.dataset.incidentId));
+    });
+
+    document.querySelectorAll(".tabs button").forEach((button) => {
+      button.addEventListener("click", () => switchTab(button.dataset.tab));
+    });
+
+    el.sidebarOpen.addEventListener("click", openSidebar);
+    el.sidebarClose.addEventListener("click", closeSidebar);
+    document.getElementById("detail-close").addEventListener("click", clearSelection);
+    document.getElementById("locate").addEventListener("click", locateUser);
+    document.getElementById("fit").addEventListener("click", () => fitRoutes());
+    document.getElementById("refresh").addEventListener("click", loadData);
+
+    loadData();
+    setInterval(() => loadData({ routes: false }), REFRESH_MS);
+  </script>
+</body>
+</html>
