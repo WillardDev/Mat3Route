@@ -1,0 +1,98 @@
+line,route_number,start,end,sacco,sacco_code,fare_min,fare_max
+A Line,100,Nairobi CBD,Kiambu,Super Metro,SM,80,120
+A Line,120,Nairobi CBD,Githunguri,Super Metro,SM,80,120
+A Line,121,Nairobi CBD,Ndumberi,Super Metro,SM,80,120
+B Line,17B,Nairobi CBD,Mwiki,NACICO,NC,50,80
+B Line,25,Nairobi CBD,Baba Ndogo,NACICO,NC,50,80
+B Line,25A,Nairobi CBD,Lucky Summer,NACICO,NC,50,80
+B Line,29/30,Nairobi CBD,Mathare North,NACICO,NC,50,80
+B Line,43,Nairobi CBD,Ngumba,NACICO,NC,50,80
+B Line,44,Nairobi CBD,Kahawa West,Double M,DM,60,100
+B Line,45,Nairobi CBD,Githurai,Super Metro,SM,60,100
+B Line,49,Nairobi CBD,Sunton,Double M,DM,60,100
+B Line,145,Nairobi CBD,Ruiru Town,Super Metro,SM,60,100
+C Line,6,Nairobi CBD,Eastleigh,Citi Hoppa,CH,50,80
+C Line,14,Nairobi CBD,Kariobangi North,Citi Hoppa,CH,50,80
+C Line,17A,Roundabout,Kayole,Citi Hoppa,CH,50,80
+C Line,17AKY,Eastleigh,Kayole,Citi Hoppa,CH,50,80
+C Line,18C,Komarock Roundabout,Eastleigh,Citi Hoppa,CH,50,80
+C Line,31,Gikomba,Dandora,Citi Hoppa,CH,50,80
+C Line,32,Nairobi CBD,Dandora,Citi Hoppa,CH,50,80
+C Line,46,Nairobi CBD,Huruma,Citi Hoppa,CH,50,80
+C Line,37/38,Roundabout,Ruai,Citi Hoppa,CH,50,100
+D Line,10,Nairobi CBD,Maringo,Citi Hoppa,CH,50,80
+D Line,23,Nairobi CBD,Kariobangi South,Citi Hoppa,CH,50,80
+D Line,26,Nairobi CBD,Kariobangi North,Citi Hoppa,CH,50,80
+D Line,36,Nairobi CBD,Dandora,Citi Hoppa,CH,50,80
+D Line,58,Nairobi CBD,Buruburu,Citi Hoppa,CH,50,80
+E Line,35/60,Nairobi CBD,Umoja,Citi Hoppa,CH,50,80
+E Line,38/39,Nairobi CBD,Ruai,Citi Hoppa,CH,50,100
+E Line,19C2,Umoja/Donholm,Komarock,Citi Hoppa,CH,50,80
+F Line,17B,Muthurwa,Mwiki,NACICO,NC,50,80
+F Line,19C,Nairobi CBD,Komarock,Citi Hoppa,CH,50,80
+F Line,34B,Nairobi CBD,Jacaranda,Citi Hoppa,CH,50,80
+F Line,1960,Nairobi CBD,Kayole,Citi Hoppa,CH,50,80
+F Line,1961C,Nairobi CBD,Kayole,Citi Hoppa,CH,50,80
+F Line,1961CK,Caltex,Kayole,Citi Hoppa,CH,50,80
+G Line,33F,Nairobi CBD,Fedha Estate,Citi Hoppa,CH,50,80
+G Line,33PJ,Nairobi CBD,Pipeline Jogoo,Citi Hoppa,CH,50,80
+G Line,33PM,Nairobi CBD,Pipeline Mombasa,Citi Hoppa,CH,50,80
+G Line,34,Nairobi CBD,JKIA,NACICO,NC,50,100
+G Line,70/71,Nairobi CBD,Lunga Lunga,Citi Hoppa,CH,50,80
+H Line,12C,Nairobi CBD,South C,Compliant MOA,CM,50,80
+H Line,12D,Nairobi CBD,KPA,Kenya Mpya,KM,50,100
+H Line,33,Nairobi CBD,Utawala,Citi Hoppa,CH,50,100
+H Line,110ATH,Nairobi CBD,Athi River,Kenya Mpya,KM,150,200
+H Line,110KIT,Nairobi CBD,Kitengela,Kenya Mpya,KM,150,200
+I Line,14A,Nairobi CBD,Strathmore,Citi Hoppa,CH,50,80
+I Line,14B,Nairobi CBD,Deep West,Citi Hoppa,CH,50,100
+I Line,15,Nairobi CBD,Langata,Compliant MOA,CM,50,80
+I Line,16,Nairobi CBD,Highrise,Compliant MOA,CM,50,80
+I Line,34,Nairobi Hospital,Kenyatta,NACICO,NC,50,100
+I Line,125,Nairobi CBD,Rongai,Super Metro,SM,100,150
+I Line,126,Nairobi CBD,Kiserian,Super Metro,SM,80,100
+J Line,7C,Nairobi CBD,KNH,Compliant MOA,CM,50,80
+J Line,8,Nairobi CBD,Kibera,Compliant MOA,CM,50,80
+J Line,24,Nairobi CBD,Karen,Compliant MOA,CM,50,100
+J Line,24C,Nairobi CBD,Hardy,Compliant MOA,CM,50,80
+J Line,32,Nairobi CBD,Ayani,Compliant MOA,CM,50,80
+J Line,33,Nairobi CBD,Ngumo,Compliant MOA,CM,50,80
+J Line,111,Nairobi CBD,Ngong,Super Metro,SM,80,100
+K Line,2,Nairobi CBD,Dagoretti,NACICO,NC,60,100
+K Line,4W,Nairobi CBD,Kaberia,NACICO,NC,60,100
+K Line,102,Nairobi CBD,Kikuyu,Super Metro,SM,60,100
+L Line,46,Nairobi CBD,Kawangware,NACICO,NC,60,100
+L Line,46,Nairobi CBD,Yaya,NACICO,NC,50,100
+M Line,48,Nairobi CBD,Othaya,NACICO,NC,50,100
+M Line,48A,Nairobi CBD,Lavington,NACICO,NC,60,100
+M Line,48B,Nairobi CBD,Othaya,NACICO,NC,50,100
+N Line,22,Nairobi CBD,Uthiru,NACICO,NC,60,100
+N Line,23,Nairobi CBD,Kangemi,NACICO,NC,60,100
+N Line,30,Nairobi CBD,Uthiru,NACICO,NC,60,100
+N Line,105,Nairobi CBD,Kikuyu,Super Metro,SM,60,100
+N Line,115,Nairobi CBD,Limuru,Super Metro,SM,60,100
+O Line,118,Nairobi CBD,Wangige,NACICO,NC,60,100
+O Line,119,Nairobi CBD,Wangige,NACICO,NC,60,100
+O Line,103,Nakumatt,Wangige,NACICO,NC,60,100
+O Line,11B,Nairobi CBD,Banana,NACICO,NC,60,100
+P Line,11A,Nairobi CBD,Highridge,NACICO,NC,50,100
+P Line,11F,Nairobi CBD,Ruaka,NACICO,NC,60,100
+P Line,106,Nairobi CBD,Banana,NACICO,NC,60,100
+P Line,107,Nairobi CBD,Ndenderu,NACICO,NC,60,100
+P Line,116,Nairobi CBD,Limuru,Super Metro,SM,60,100
+Z Line (Mixed),48,Westlands,Kawangware,NACICO,NC,60,100
+Z Line (Mixed),48C,Westlands,Yaya,NACICO,NC,60,100
+Z Line (Mixed),69,City Stadium,GM,Citi Hoppa,CH,50,80
+Z Line (Mixed),108,Redhill,Gasolina,Kenya Mpya,KM,50,100
+Z Line (Mixed),110AK,Athi River,Kitengela,Kenya Mpya,KM,150,200
+Z Line (Mixed),1,Karen,Dagoretti,Compliant MOA,CM,60,100
+Z Line (Mixed),6,Rikana,Joster,Kenya Mpya,KM,50,100
+Z Line (Mixed),11,Nairobi CBD,Hazina,Compliant MOA,CM,50,80
+Z Line (Mixed),20,Mama Lucy,Mwiki,NACICO,NC,50,80
+Z Line (Mixed),24,Bomas,Dagoretti,Compliant MOA,CM,60,100
+Z Line (Mixed),33,Ngumo,South B,Compliant MOA,CM,50,80
+Z Line (Mixed),107D,Ruaka,Marurui,NACICO,NC,60,100
+Z Line (Mixed),42,Allsops,Dandora,Citi Hoppa,CH,50,80
+Z Line (Mixed),129,Wangige,Kikuyu,Super Metro,SM,60,100
+Z Line (Mixed),239,Ruiru,Thika,Super Metro,SM,60,100
+Z Line (Mixed),405,City Stadium,Nyayo,Compliant MOA,CM,50,80
